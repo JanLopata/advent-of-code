@@ -1,18 +1,24 @@
 package cz.princu.adventofcode.common;
 
+
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 
-public interface Day extends DoesFileOperations {
-    Object part1(String data);
+@Slf4j
+public abstract class Day implements DoesFileOperations {
 
-    Object part2(String data);
+    public abstract Object part1(String data);
 
-    int getDayNumber();
-    int getYear();
+    public abstract Object part2(String data);
 
-    default void printParts() throws IOException {
+    public abstract int getDayNumber();
 
-        System.out.println("Part 1: " + part1(getDayData(getDayNumber(), getYear())));
-        System.out.println("Part 2: " + part2(getDayData(getDayNumber(), getYear())));
+    public abstract int getYear();
+
+    public void printParts() throws IOException {
+
+        log.info("Part 1: {}", part1(getDayData(getDayNumber(), getYear())));
+        log.info("Part 2: {}", part2(getDayData(getDayNumber(), getYear())));
     }
 }

@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Day1 implements Day {
+public class Day1 extends Day {
     public static void main(String[] args) throws IOException {
         new Day1().printParts();
     }
