@@ -4,7 +4,9 @@ import cz.princu.adventofcode.common.Day;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Day1 extends Day {
@@ -16,17 +18,14 @@ public class Day1 extends Day {
     public Object part1(String data) {
 
         List<Long> values = getValues(data);
+        Set<Long> valuesSet = new HashSet<>(values);
 
-        for (int first = 0; first < values.size(); first++) {
+        for (Long firstValue : values) {
 
-            for (int second = 0; second < values.size(); second++) {
-                if (first == second)
-                    continue;
+            long complement = 2020L - firstValue;
 
-                if (values.get(first) + values.get(second) == 2020L)
-                    return values.get(first) * values.get(second);
-
-            }
+            if (valuesSet.contains(complement))
+                return firstValue * complement;
         }
 
         return 0L;
@@ -36,13 +35,15 @@ public class Day1 extends Day {
     public Object part2(String data) {
 
         List<Long> values = getValues(data);
+        Set<Long> valuesSet = new HashSet<>(values);
 
         for (Long v1 : values) {
             for (Long v2 : values) {
-                for (Long v3 : values) {
-                    if (v1 + v2 + v3 == 2020L)
-                        return v1 * v2 * v3;
-                }
+
+                long complement = 2020L - v1 - v2;
+
+                if (valuesSet.contains(complement))
+                    return v1 * v2 * complement;
             }
         }
 
