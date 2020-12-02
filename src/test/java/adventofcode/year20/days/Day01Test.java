@@ -1,12 +1,12 @@
 package adventofcode.year20.days;
 
-import cz.princu.adventofcode.year20.days.Day1;
+import cz.princu.adventofcode.year20.days.Day01;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class Day1Test {
+class Day01Test {
 
-    Day1 tested = new Day1();
+    Day01 tested = new Day01();
 
     @Test
     void testPart1_simpleData() {
