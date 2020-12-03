@@ -1,4 +1,4 @@
-package adventofcode.year20.days;
+package cz.princu.adventofcode.year20.days;
 
 import cz.princu.adventofcode.year20.days.Day01;
 import org.junit.jupiter.api.Assertions;

@@ -13,7 +13,8 @@ public interface DoesFileOperations {
     }
 
     default String getDayData(int day, int year) throws IOException {
-        return getResourceAsString(year + "/day" + day + ".txt");
+        String dayString = String.format("%02d", day);
+        return getResourceAsString(year + "/day" + dayString + ".txt");
     }
 
     default String[] dayStrings(int day) throws IOException {
