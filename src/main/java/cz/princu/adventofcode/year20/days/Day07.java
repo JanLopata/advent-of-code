@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,10 +28,38 @@ public class Day07 extends Day {
 
         String[] lines = data.split("\n");
 
-        List<BagRule> rules = Arrays.stream(lines).map(this::parseRule).collect(Collectors.toList());
+        Map<String, BagRule> bagRuleMap = Arrays.stream(lines)
+                .map(this::parseRule)
+                .collect(Collectors.toMap(BagRule::getOuterBag, it -> it));
 
+        return countBagsThatCanContain("shiny gold", bagRuleMap);
+    }
 
-        return 0L;
+    private Long countBagsThatCanContain(String bagToContain, Map<String, BagRule> bagRuleMap) {
+
+        return bagRuleMap.keySet().stream()
+                .filter(outerBag -> canEventuallyContain(outerBag, bagToContain, bagRuleMap))
+                .count();
+
+    }
+
+    private boolean canEventuallyContain(String outerBag, String containingBagName, Map<String, BagRule> bagRuleMap) {
+
+        if (!bagRuleMap.containsKey(outerBag))
+            return false;
+
+        BagRule outerBagRule = bagRuleMap.get(outerBag);
+        if (outerBagRule.getInnerBagsMap().containsKey(containingBagName))
+            return true;
+
+        for (String innerBag : outerBagRule.getInnerBagsMap().keySet()) {
+
+            if (canEventuallyContain(innerBag, containingBagName, bagRuleMap))
+                return true;
+
+        }
+
+        return false;
     }
 
     private BagRule parseRule(String s) {
@@ -44,12 +71,10 @@ public class Day07 extends Day {
         String outerBag = ruleParts[0];
         String innerBagsToParse = ruleParts[1];
 
-        BagRule rule = BagRule.builder()
+        return BagRule.builder()
                 .outerBag(outerBag)
                 .innerBagsMap(parseInnerBags(innerBagsToParse))
                 .build();
-
-        return rule;
     }
 
     private Map<String, Integer> parseInnerBags(String innerBagsToParse) {
@@ -74,9 +99,30 @@ public class Day07 extends Day {
     @Override
     public Object part2(String data) {
 
+        String[] lines = data.split("\n");
 
-        return 0L;
+        Map<String, BagRule> bagRuleMap = Arrays.stream(lines)
+                .map(this::parseRule)
+                .collect(Collectors.toMap(BagRule::getOuterBag, it -> it));
 
+        return countBagsContaining("shiny gold", bagRuleMap) - 1L;
+
+    }
+
+    private Long countBagsContaining(String head, Map<String, BagRule> bagRuleMap) {
+
+        if (!bagRuleMap.containsKey(head))
+            return 0L;
+
+        BagRule headBagRule = bagRuleMap.get(head);
+
+        long sum = 1L;
+        for (Map.Entry<String, Integer> bagNameAndCount : headBagRule.innerBagsMap.entrySet()) {
+
+            sum += bagNameAndCount.getValue() * countBagsContaining(bagNameAndCount.getKey(), bagRuleMap);
+
+        }
+        return sum;
     }
 
     @Override
