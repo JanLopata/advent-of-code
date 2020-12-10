@@ -131,7 +131,18 @@ class Day10Test {
     @Test
     void test_knownSubvariants() {
 
-        Assertions.assertEquals(7, tested.countValidWithRemoval(new long[]{0, 1, 2, 3, 4}));
+        Assertions.assertEquals(7L, tested.countValidWithRemoval(new long[]{0, 1, 2, 3, 4}));
+
+        Assertions.assertEquals(6L, tested.countValidWithRemoval(new long[]{0, 1, 2, 3, 5}));
+
+        Assertions.assertEquals(81L,tested.countValidWithRemoval(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8}));
+
+    }
+
+    @Test
+    void generateValid() {
+
+        tested.generateValid(new long[]{0, 1, 2, 3, 5});
 
     }
 

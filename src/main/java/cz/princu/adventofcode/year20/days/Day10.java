@@ -6,10 +6,15 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Day10 extends Day {
 
@@ -99,6 +104,42 @@ public class Day10 extends Day {
 
     }
 
+
+    void generateValid(long[] data) {
+
+        Set<String> validSet = new HashSet<>();
+
+        int n = data.length;
+
+        for (int i = 0; i < (1 << n); i++) {
+
+            List<Long> myList = new ArrayList<>();
+
+            myList.add(data[0]);
+            for (int j = 1; j < n - 1; j++) {
+                if ((i & (1 << j)) > 0) {
+                    myList.add(data[j]);
+                }
+            }
+            myList.add(data[n - 1]);
+
+            boolean valid = true;
+            for (int j = 0; j < myList.size() - 1; j++) {
+                if (myList.get(j + 1) - myList.get(j) > 3) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid)
+                validSet.add(myList.stream().map(Object::toString).collect(Collectors.joining(", ")));
+
+        }
+
+        System.out.println(validSet.size());
+        validSet.forEach(System.out::println);
+
+    }
+
     private Long countValidRemovals(long[] smallData) {
 
         if (smallData.length > 4)
@@ -115,7 +156,7 @@ public class Day10 extends Day {
         }
 
         // length 4
-        if (smallData[smallData.length - 1] - smallData[0] <= 3 )
+        if (smallData[smallData.length - 1] - smallData[0] <= 3)
             return 4L;
 
         long result = 1;
