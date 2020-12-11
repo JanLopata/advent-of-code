@@ -67,38 +67,45 @@ public class Day10 extends Day {
         LinkedList<Long> adaptersSorted = getAdaptersSorted(data);
 
         long[] dataArray = adaptersSorted.stream().mapToLong(it -> it).toArray();
-
-        return countValidWithRemoval(dataArray);
-    }
-
-    Long countValidWithRemoval(long[] dataArray) {
-
-        if (dataArray.length <= 4) {
-            return countValidRemovals(Arrays.copyOf(dataArray, dataArray.length));
-        }
-
-        int middle = dataArray.length / 2;
-
-
-        long[] left = Arrays.copyOfRange(dataArray, 0, middle + 1);
-        long[] right = Arrays.copyOfRange(dataArray, middle, dataArray.length);
+        List<Integer> solidPointIndices = findSolidPoints(dataArray);
 
         long result = 1L;
 
-        result *= countValidWithRemoval(left);
-        result *= countValidWithRemoval(right);
+        for (int i = 0; i < solidPointIndices.size() - 1; i++) {
 
-        if (canBeRemoved(dataArray, middle)) {
+            int solidPointDiff = solidPointIndices.get(i + 1) - solidPointIndices.get(i);
 
-            // removal
-            long removalResult = 1L;
-            left[left.length - 1] = dataArray[middle + 1];
-            right = Arrays.copyOfRange(dataArray, middle + 1, dataArray.length);
-            removalResult *= countValidWithRemoval(left);
-            removalResult *= countValidWithRemoval(right);
+            if (solidPointDiff == 1)
+                result *= 1;
 
-            result += removalResult + 1;
+            if (solidPointDiff == 2)
+                result *= 2;
+
+            if (solidPointDiff == 3)
+                result *= 4;
+
+            if (solidPointDiff == 4)
+                result *= 7;
+
+            if (solidPointDiff < 1 || solidPointDiff > 4)
+                throw new IllegalArgumentException("do not know");
         }
+
+        return result;
+    }
+
+    private List<Integer> findSolidPoints(long[] dataArray) {
+
+
+        List<Integer> result = new ArrayList<>();
+        result.add(0);
+        for (int i = 1; i < dataArray.length - 1; i++) {
+
+            if (!canBeRemoved(dataArray, i))
+                result.add(i);
+        }
+
+        result.add(dataArray.length - 1);
 
         return result;
 
@@ -137,36 +144,6 @@ public class Day10 extends Day {
 
         System.out.println(validSet.size());
         validSet.forEach(System.out::println);
-
-    }
-
-    private Long countValidRemovals(long[] smallData) {
-
-        if (smallData.length > 4)
-            throw new IllegalArgumentException("too big data");
-
-        if (smallData.length < 3)
-            return 1L;
-
-        if (smallData.length == 3) {
-            if (canBeRemoved(smallData, 1)) {
-                return 2L;
-            } else
-                return 1L;
-        }
-
-        // length 4
-        if (smallData[smallData.length - 1] - smallData[0] <= 3)
-            return 4L;
-
-        long result = 1;
-        if (canBeRemoved(smallData, 1))
-            result++;
-
-        if (canBeRemoved(smallData, 2))
-            result++;
-
-        return result;
 
     }
 
