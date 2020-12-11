@@ -22,8 +22,14 @@ public class Day11 extends Day {
     @Override
     public Object part1(String data) {
 
-        String[] lines = data.split("\n");
+        final int variant = 0;
 
+        return solve(data, variant);
+
+    }
+
+    private Long solve(String data, int variant) {
+        String[] lines = data.split("\n");
 
         char[][] dataField = new char[lines.length][];
 
@@ -34,7 +40,7 @@ public class Day11 extends Day {
         Set<Integer> knownFields = new HashSet<>();
         knownFields.add(Arrays.deepHashCode(dataField));
 
-        char[][] workField = generateNewField(dataField);
+        char[][] workField = generateNewField(dataField, variant);
 
         while (!knownFields.contains(Arrays.deepHashCode(workField))) {
 
@@ -42,15 +48,13 @@ public class Day11 extends Day {
 
             printField(workField);
             log.info("hash: {}", Arrays.deepHashCode(workField));
-            workField = generateNewField(workField);
+            workField = generateNewField(workField, variant);
         }
 
         printField(workField);
         log.info("hash: {}", Arrays.deepHashCode(workField));
 
         return countOccupied(workField);
-
-
     }
 
     private Long countOccupied(char[][] dataField) {
@@ -62,7 +66,6 @@ public class Day11 extends Day {
 
                 if (c == '#')
                     result++;
-
             }
         }
 
@@ -70,7 +73,7 @@ public class Day11 extends Day {
 
     }
 
-    private char[][] generateNewField(char[][] dataField) {
+    private char[][] generateNewField(char[][] dataField, int variant) {
 
         char[][] result = new char[dataField.length][];
         for (int i = 0; i < dataField.length; i++) {
@@ -78,25 +81,82 @@ public class Day11 extends Day {
 
             for (int j = 0; j < dataField[i].length; j++) {
 
-                char target = dataField[i][j];
-
-                final char current = dataField[i][j];
-
-                if (current == '#' && countOccupiedAround(dataField, i, j) >= 4)
-                    target = 'L';
-
-
-                if (current == 'L' && countOccupiedAround(dataField, i, j) == 0)
-                    target = '#';
+                char target = applyRules(dataField, i, j, variant);
 
                 result[i][j] = target;
-
             }
-
         }
 
         return result;
 
+    }
+
+    private char applyRules(char[][] dataField, int i, int j, int variant) {
+        char target = dataField[i][j];
+
+        final char current = dataField[i][j];
+
+
+        if (variant == 0) {
+            if (current == '#' && countOccupiedAround(dataField, i, j) >= 4)
+                target = 'L';
+
+            if (current == 'L' && countOccupiedAround(dataField, i, j) == 0)
+                target = '#';
+
+        } else {
+
+            if (current == '#' && countOccupiedStar(dataField, i, j) >= 5)
+                target = 'L';
+
+            if (current == 'L' && countOccupiedStar(dataField, i, j) == 0)
+                target = '#';
+
+        }
+        return target;
+    }
+
+    private int countOccupiedStar(char[][] field, int i, int j) {
+
+        int iBound = field.length;
+        int jBound = field[0].length;
+
+        int result = 0;
+
+        for (int iDir = -1; iDir <= 1; iDir++) {
+            for (int jDir = -1; jDir <= 1; jDir++) {
+
+                if (iDir == 0 && jDir == 0)
+                    continue;
+
+                result += countOccupiedInDirection(field, i, j, iBound, jBound, iDir, jDir);
+            }
+        }
+
+        return result;
+    }
+
+    private int countOccupiedInDirection(char[][] field, int i, int j, int iBound, int jBound, int iDir, int jDir) {
+        for (int k = 1; k < field.length; k++) {
+
+            final int iCheck = i + k * iDir;
+            final int jCheck = j + k * jDir;
+            if (outOfBounds(iCheck, iBound) || outOfBounds(jCheck, jBound))
+                return 0;
+
+            if (field[iCheck][jCheck] == '#') {
+                return 1;
+            }
+
+            if (field[iCheck][jCheck] == 'L')
+                return 0;
+
+        }
+        return 0;
+    }
+
+    private boolean outOfBounds(int i, int upperBound) {
+        return i < 0 || i >= upperBound;
     }
 
     private int countOccupiedAround(char[][] field, int idx1, int idx2) {
@@ -145,7 +205,10 @@ public class Day11 extends Day {
     @Override
     public Object part2(String data) {
 
-        return 0L;
+        final int variant = 1;
+
+
+        return solve(data, variant);
     }
 
 
