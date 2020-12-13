@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -51,7 +50,6 @@ public class Day13 extends Day {
             time++;
         }
 
-
     }
 
     @Override
@@ -62,46 +60,33 @@ public class Day13 extends Day {
 
         final List<Integer> requiredBuses = Arrays.stream(busLinesInput.split(",")).map(it -> "x".equals(it) ? -1 : Integer.parseInt(it)).collect(Collectors.toList());
 
-        log.info("{}", requiredBuses);
-        final long minimalStep = getMinimalStep(requiredBuses);
-        log.info("minimal step {}", minimalStep);
-
         final int[] requirementIndices = getRequirementIndices(requiredBuses);
-        final int [] requirementBusNumbers = new int[requirementIndices.length];
+        final int[] requirementBusNumbers = new int[requirementIndices.length];
         for (int i = 0; i < requirementIndices.length; i++) {
             requirementBusNumbers[i] = requiredBuses.get(requirementIndices[i]);
         }
 
-        long time = 0;
-        while (true) {
+        long result = 0;
 
-            int success = 0;
+        for (int i = 0; i < requirementBusNumbers.length; i++) {
 
-            for (int i = 0; i < requirementBusNumbers.length; i++) {
+            final int base = requirementBusNumbers[i];
+            long megatron = getMegatron(requirementBusNumbers, base);
 
-                if (time % requirementBusNumbers[i] == requirementIndices[i])
-                    success++;
-
-            }
-
-            if (success == requirementBusNumbers.length)
-                return time;
-
-            if (success > requirementBusNumbers.length - 1) {
-                log.info("time {} success {}", time, success);
-            }
-
-            time += minimalStep;
+            final int remainder = (base - requirementIndices[i]) % base;
+            final long inverse = getInverseMod(megatron, base);
+            result += remainder * megatron * inverse;
 
         }
+
+        return result % getMegatron(requirementBusNumbers, -1);
 
     }
 
     private int[] getRequirementIndices(List<Integer> requiredBuses) {
         final int requirementsCount = (int) requiredBuses.stream().filter(it -> it > 0).count();
 
-
-        int [] indices = new int[requirementsCount];
+        int[] indices = new int[requirementsCount];
 
         int idx = 0;
         for (int i = 0; i < requiredBuses.size(); i++) {
@@ -115,47 +100,27 @@ public class Day13 extends Day {
     }
 
 
-    private Long getMinimalStep(List<Integer> requiredBuses) {
+    private long getMegatron(int[] numbers, int ignoredNumber) {
 
-//        Set<Integer> requirementIndices = new HashSet<>();
-//        for (int i = 0; i < requiredBuses.size(); i++) {
-//            if (requiredBuses.get(i) != -1)
-//                requirementIndices.add(i);
-//        }
-//
-//        long minimalStep = 1;
-//        for (Integer index : requirementIndices) {
-//
-//            for (Integer requiredBus : requiredBuses) {
-//                if (index.equals(requiredBus)) {
-//                    final int candidate = index * requiredBuses.get(index);
-//                    if (candidate > minimalStep)
-//                        minimalStep = candidate;
-//
-//                }
-//            }
-//        }
-//
-//        return minimalStep;
+        long result = 1;
+        for (int number : numbers) {
+            if (number != ignoredNumber)
+                result *= number;
+        }
+        return result;
 
-
-        return requiredBuses.get(0).longValue();
     }
 
-    private Long nextKIntersect(int p1, int p2, int diff) {
+    private long getInverseMod(long number, int base) {
 
-        for (long n = 0; n < p1 * p2 * 10; n++) {
-
-            if (n % p1 == 0 && n % p2 == diff) {
-                System.out.println(n);
-            }
-
-
+        for (int x = 0; x < base; x++) {
+            if ((number * x) % base == 1)
+                return x;
         }
 
-        return 0L;
-
+        return -1;
     }
+
 
     @AllArgsConstructor
     @Getter

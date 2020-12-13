@@ -27,5 +27,36 @@ class Day13Test {
 
     }
 
+    @Test
+    void testPart2_two_simpleData() {
+        String testData = "\n" + "67,7,59,61";
+
+        Assertions.assertEquals(754018L, tested.part2(testData));
+
+    }
+
+    @Test
+    void testPart2_three_simpleData() {
+        String testData = "\n" + "67,x,7,59,61";
+
+        Assertions.assertEquals(779210L, tested.part2(testData));
+
+    }
+
+    @Test
+    void testPart2_four_simpleData() {
+        String testData = "\n" + "67,7,x,59,61";
+
+        Assertions.assertEquals(1261476L, tested.part2(testData));
+
+    }
+
+    @Test
+    void testPart2_five_simpleData() {
+        String testData = "\n" + "1789,37,47,1889";
+
+        Assertions.assertEquals(1202161486L, tested.part2(testData));
+
+    }
 
 }
