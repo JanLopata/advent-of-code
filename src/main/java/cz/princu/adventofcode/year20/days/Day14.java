@@ -7,7 +7,9 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,10 +62,38 @@ public class Day14 extends Day {
     @Override
     public Object part2(String data) {
 
-        String[] input = data.split("\n");
+        String[] lines = data.split("\n");
+
+        MemoryMask mask = new MemoryMask("000000000000000000000000000000000000");
+
+        Map<MemoryMask, Long> somewhatMemory = new HashMap<>();
+
+        List<MemoryMask> usedMemoryMasks = new ArrayList<>();
+
+        for (String line : lines) {
+
+            final Matcher maskMatcher = MASK_PATTERN.matcher(line);
+            if (maskMatcher.matches()) {
+                mask = parseMemoryMask(maskMatcher);
+                continue;
+            }
+
+            final Matcher memOpMatcher = MEM_OP_PATTERN.matcher(line);
+            if (memOpMatcher.matches()) {
+
+                MemoryOperation memoryOperation = parseMemoryOperation(memOpMatcher);
+
+                MemoryMask resultMask = mask.apply(memoryOperation.getTarget());
+                usedMemoryMasks.add(resultMask);
+
+                somewhatMemory.put(resultMask, memoryOperation.getValue());
+            }
+
+        }
 
 
-        return 0L;
+        return somewhatMemory.entrySet().stream().mapToLong(e -> e.getKey().getCopiesCount() * e.getValue()).sum();
+
     }
 
     MemoryOperation parseMemoryOperation(Matcher matcher) {
@@ -79,6 +109,98 @@ public class Day14 extends Day {
             return null;
 
         return new Mask(matcher.group(1));
+    }
+
+    MemoryMask parseMemoryMask(Matcher matcher) {
+
+        return new MemoryMask(matcher.group(1));
+    }
+
+
+    @ToString(of = "maskString")
+    private static class MemoryMask {
+
+        private final String maskString;
+
+        private final int[] bits = new int[36];
+
+        public MemoryMask(String maskString) {
+            this.maskString = maskString;
+
+            if (maskString.length() != 36)
+                throw new IllegalArgumentException("wrong length");
+
+            for (int i = 0; i < maskString.length(); i++) {
+                final char c = maskString.charAt(i);
+
+                if (c == '0')
+                    bits[i] = 0;
+                else if (c == '1')
+                    bits[i] = 1;
+                else
+                    bits[i] = -1;
+            }
+
+        }
+
+        private MemoryMask(int[] bitArray) {
+
+            maskString = convertToMaskString(bitArray);
+            System.arraycopy(bitArray, 0, bits, 0, bitArray.length);
+
+        }
+
+        private static String convertToMaskString(int[] bitArray) {
+
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i : bitArray) {
+                if (i == -1)
+                    stringBuilder.append('F');
+                else
+                    stringBuilder.append(i);
+            }
+
+            return stringBuilder.toString();
+
+        }
+
+        public MemoryMask apply(long number) {
+
+            long workNumber = number;
+
+            int[] appliedMaskBits = new int[36];
+
+            for (int i = 0; i < maskString.length(); i++) {
+                final long base = 1L << (35 - i);
+                long bitValue = workNumber / base;
+                workNumber = workNumber % base;
+
+                int appliedValue = -1;
+                if (bits[i] == 1)
+                    appliedValue = 1;
+
+                if (bits[i] == 0)
+                    appliedValue = bitValue > 0 ? 1 : 0;
+
+                appliedMaskBits[i] = appliedValue;
+            }
+
+            return new MemoryMask(appliedMaskBits);
+        }
+
+        Long getCopiesCount() {
+
+            long result = 1;
+
+            for (int bit : bits) {
+                if (bit == -1)
+                    result *= 2;
+            }
+
+            return result;
+
+        }
+
     }
 
 

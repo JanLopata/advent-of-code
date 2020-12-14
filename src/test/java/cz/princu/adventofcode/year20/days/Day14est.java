@@ -22,9 +22,12 @@ class Day14est {
     @Test
     void testPart2_one_simpleData() {
 
-        String testData = "";
+        String testData = "mask = 000000000000000000000000000000X1001X\n" +
+                "mem[42] = 100\n" +
+                "mask = 00000000000000000000000000000000X0XX\n" +
+                "mem[26] = 1";
 
-        Assertions.assertEquals(0L, tested.part2(testData));
+        Assertions.assertEquals(208L, tested.part2(testData));
 
     }
 
