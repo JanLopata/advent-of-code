@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +68,7 @@ public class Day14 extends Day {
 
         MemoryMask mask = new MemoryMask("000000000000000000000000000000000000");
 
-        Map<MemoryMask, Long> somewhatMemory = new HashMap<>();
-
-        List<MemoryMask> usedMemoryMasks = new ArrayList<>();
+        Map<BitSet, Long> memory = new HashMap<>();
 
         for (String line : lines) {
 
@@ -84,37 +84,14 @@ public class Day14 extends Day {
                 MemoryOperation memoryOperation = parseMemoryOperation(memOpMatcher);
 
                 MemoryMask resultMask = mask.apply(memoryOperation.getTarget());
-                usedMemoryMasks.add(resultMask);
 
-                somewhatMemory.put(resultMask, memoryOperation.getValue());
+                addValues(memoryOperation.getValue(), memory, resultMask.getMaskString());
             }
 
         }
 
-        analyzeSituation(usedMemoryMasks);
+        return memory.values().stream().mapToLong(it -> it).sum();
 
-
-        return somewhatMemory.entrySet().stream().mapToLong(e -> e.getKey().getCopiesCount() * e.getValue()).sum();
-
-    }
-
-    private void analyzeSituation(List<MemoryMask> usedMemoryMasks) {
-        for (int i = 0; i < usedMemoryMasks.size(); i++) {
-            int intersectionCount = 0;
-            long maxIntersectionValue = 0;
-            for (int j = 0; j < usedMemoryMasks.size(); j++) {
-                if (i <= j)
-                    continue;
-
-                final MemoryMask intersection = usedMemoryMasks.get(i).getIntersection(usedMemoryMasks.get(j));
-                if (intersection != null) {
-                    log.info("intersection for {}-{}: {}", i, j, intersection);
-                    intersectionCount++;
-                }
-            }
-            if (intersectionCount > 0)
-                log.info("for {} got {} intersections with max", i, intersectionCount);
-        }
     }
 
     MemoryOperation parseMemoryOperation(Matcher matcher) {
@@ -141,6 +118,7 @@ public class Day14 extends Day {
     @ToString(of = "maskString")
     private static class MemoryMask {
 
+        @Getter
         private final String maskString;
 
         private final int[] bits = new int[36];
@@ -209,45 +187,44 @@ public class Day14 extends Day {
             return new MemoryMask(appliedMaskBits);
         }
 
-        Long getCopiesCount() {
+    }
 
-            long result = 1;
 
-            for (int bit : bits) {
-                if (bit == -1)
-                    result *= 2;
-            }
+    static void addValues(long value, Map<BitSet, Long> memory, String address) {
 
-            return result;
+        final char[] chars = address.toCharArray();
+        BitSet bitSet = new BitSet(36);
 
+        List<Integer> flippableIndices = new ArrayList<>();
+
+        for (int i = 0; i < chars.length; i++) {
+            if (chars[i] == '1')
+                bitSet.set(i);
+
+            if (chars[i] == 'X')
+                flippableIndices.add(i);
         }
 
-        MemoryMask getIntersection(MemoryMask another) {
+        addValues(value, memory, bitSet, flippableIndices.stream().mapToInt(it -> it).toArray());
+    }
 
-            int[] intersectionBits = new int[bits.length];
+    static void addValues(long value, Map<BitSet, Long> memory, BitSet bitSet, int[] flippableIndices) {
 
-            for (int i = 0; i < bits.length; i++) {
-
-                if (bits[i] == -1) {
-                    intersectionBits[i] = another.bits[i];
-                    continue;
-                }
-
-                if (another.bits[i] == -1) {
-                    intersectionBits[i] = bits[i];
-                    continue;
-                }
-
-                if (bits[i] == another.bits[i])
-                    intersectionBits[i] = bits[i];
-                else
-                    return null;
-
-            }
-
-            return new MemoryMask(intersectionBits);
-
+        if (flippableIndices.length == 0) {
+            memory.put(bitSet, value);
+            return;
         }
+
+        // recursion
+        int flipIdx = flippableIndices[flippableIndices.length - 1];
+        int[] flippableSub = Arrays.copyOf(flippableIndices, flippableIndices.length - 1);
+
+        BitSet workBitSet = (BitSet) bitSet.clone();
+        addValues(value, memory, workBitSet, flippableSub);
+
+        workBitSet = (BitSet) bitSet.clone();
+        workBitSet.flip(flipIdx);
+        addValues(value, memory, workBitSet, flippableSub);
 
     }
 
