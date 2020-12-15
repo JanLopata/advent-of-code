@@ -91,9 +91,30 @@ public class Day14 extends Day {
 
         }
 
+        analyzeSituation(usedMemoryMasks);
+
 
         return somewhatMemory.entrySet().stream().mapToLong(e -> e.getKey().getCopiesCount() * e.getValue()).sum();
 
+    }
+
+    private void analyzeSituation(List<MemoryMask> usedMemoryMasks) {
+        for (int i = 0; i < usedMemoryMasks.size(); i++) {
+            int intersectionCount = 0;
+            long maxIntersectionValue = 0;
+            for (int j = 0; j < usedMemoryMasks.size(); j++) {
+                if (i <= j)
+                    continue;
+
+                final MemoryMask intersection = usedMemoryMasks.get(i).getIntersection(usedMemoryMasks.get(j));
+                if (intersection != null) {
+                    log.info("intersection for {}-{}: {}", i, j, intersection);
+                    intersectionCount++;
+                }
+            }
+            if (intersectionCount > 0)
+                log.info("for {} got {} intersections with max", i, intersectionCount);
+        }
     }
 
     MemoryOperation parseMemoryOperation(Matcher matcher) {
@@ -155,7 +176,7 @@ public class Day14 extends Day {
             StringBuilder stringBuilder = new StringBuilder();
             for (int i : bitArray) {
                 if (i == -1)
-                    stringBuilder.append('F');
+                    stringBuilder.append('X');
                 else
                     stringBuilder.append(i);
             }
@@ -198,6 +219,33 @@ public class Day14 extends Day {
             }
 
             return result;
+
+        }
+
+        MemoryMask getIntersection(MemoryMask another) {
+
+            int[] intersectionBits = new int[bits.length];
+
+            for (int i = 0; i < bits.length; i++) {
+
+                if (bits[i] == -1) {
+                    intersectionBits[i] = another.bits[i];
+                    continue;
+                }
+
+                if (another.bits[i] == -1) {
+                    intersectionBits[i] = bits[i];
+                    continue;
+                }
+
+                if (bits[i] == another.bits[i])
+                    intersectionBits[i] = bits[i];
+                else
+                    return null;
+
+            }
+
+            return new MemoryMask(intersectionBits);
 
         }
 
