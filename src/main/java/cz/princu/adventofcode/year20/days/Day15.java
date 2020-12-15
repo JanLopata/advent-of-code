@@ -16,8 +16,18 @@ public class Day15 extends Day {
     @Override
     public Object part1(String data) {
 
-        String[] input = data.split(",");
+        return computeResult(data, 2020L);
 
+    }
+
+    @Override
+    public Object part2(String data) {
+
+        return computeResult(data, 30_000_000L);
+    }
+
+    private long computeResult(String data, Long target) {
+        String[] input = data.split(",");
 
         Map<Long, Long> lastSpokenMap = new HashMap<>();
 
@@ -26,9 +36,11 @@ public class Day15 extends Day {
         }
 
         long currentNumber = Long.parseLong(input[input.length - 1]);
-        for (int i = input.length - 1; i < 2020 - 1 ; i++) {
+        for (int i = input.length - 1; i < target - 1; i++) {
 
-//            log.info("{} \t {}", i, currentNumber);
+            if (i % (target / 100) == 0) {
+                log.info("Progress {}%", i / (target/100));
+            }
 
             if (!lastSpokenMap.containsKey(currentNumber)) {
                 lastSpokenMap.put(currentNumber, (long) i);
@@ -42,17 +54,7 @@ public class Day15 extends Day {
             }
 
         }
-
-
         return currentNumber;
-    }
-
-    @Override
-    public Object part2(String data) {
-
-        String[] input = data.split("\n");
-
-        return 0L;
     }
 
 

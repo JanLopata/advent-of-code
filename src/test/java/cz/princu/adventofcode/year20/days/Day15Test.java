@@ -22,9 +22,7 @@ class Day15Test {
     @Test
     void testPart2_one_simpleData() {
 
-        String testData = "";
-
-        Assertions.assertEquals(0L, tested.part2(testData));
+        Assertions.assertEquals(175594L, tested.part2("0,3,6"));
 
     }
 
