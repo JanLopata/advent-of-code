@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class Day17 extends Day {
@@ -35,19 +37,22 @@ public class Day17 extends Day {
 
                 if (row.charAt(j) == '#') {
                     List<Integer> idxVars = new ArrayList<>();
+                    idxVars.add(0);
                     idxVars.add(i);
                     idxVars.add(j);
-                    idxVars.add(0);
                     memory.activatePosition(new GeneralIndex(idxVars));
                 }
             }
 
         }
+//        memory.activatePosition(new GeneralIndex(Stream.of(1, 1, 1).collect(Collectors.toList())));
+//        memory.activatePosition(new GeneralIndex(Stream.of(-1, 1, 1).collect(Collectors.toList())));
 
 
         GeneralMemory workMemory = GeneralMemory.copyOf(memory);
 
         for (int i = 0; i < 6; i++) {
+            log.info("Step {}\n{}", i, workMemory.getPrintableString());
 
             makeStep(memory, workMemory, new ArrayList<>());
 
@@ -55,6 +60,7 @@ public class Day17 extends Day {
             memory = workMemory;
 
         }
+        log.info("Final step\n{}", workMemory.getPrintableString());
 
         return workMemory.getActiveCount();
     }
@@ -69,7 +75,6 @@ public class Day17 extends Day {
 
             if (oldState.isActivated(target) && (vicinityActive == 2 || vicinityActive == 3)) {
                 newState.deactivatePosition(target);
-                return;
             }
 
             if (!oldState.isActivated(target) && vicinityActive == 3) {
@@ -113,19 +118,16 @@ public class Day17 extends Day {
         private final int z;
     }
 
-    @EqualsAndHashCode(of = "idxVars")
+    @EqualsAndHashCode
     @ToString
     @Getter
     public static class GeneralIndex {
 
+        private final int[] vars;
 
-        private final int [] vars;
-
-        private final List<Integer> idxVars;
 
         // TODO: varargs
         public GeneralIndex(List<Integer> idx) {
-            idxVars = idx;
             vars = new int[idx.size()];
             for (int i = 0; i < idx.size(); i++) {
                 vars[i] = idx.get(i);
@@ -133,16 +135,16 @@ public class Day17 extends Day {
         }
 
         public int getDimensionValue(int dim) {
-            return idxVars.get(dim);
+            return vars[dim];
         }
 
         public GeneralIndex plus(GeneralIndex another) {
-            if (another.idxVars.size() != this.idxVars.size())
+            if (another.getVars().length != this.vars.length)
                 throw new IllegalArgumentException("incompatibile dimensions");
 
             List<Integer> newIndices = new ArrayList<>();
-            for (int i = 0; i < idxVars.size(); i++) {
-                newIndices.add(this.idxVars.get(i) + another.idxVars.get(i));
+            for (int i = 0; i < vars.length; i++) {
+                newIndices.add(this.vars[i] + another.getVars()[i]);
             }
             return new GeneralIndex(newIndices);
         }
@@ -150,6 +152,7 @@ public class Day17 extends Day {
     }
 
     @RequiredArgsConstructor
+    @ToString
     private static class GeneralMemory {
         private final Set<GeneralIndex> memory = new HashSet<>();
         @Getter
@@ -264,6 +267,46 @@ public class Day17 extends Day {
             }
 
             return result;
+        }
+
+        private void fillStringBuilder(StringBuilder sb, List<Integer> givenIndices) {
+
+            if (givenIndices.size() == memoryIdxDimension) {
+
+                final GeneralIndex target = new GeneralIndex(givenIndices);
+                if (isActivated(target))
+                    sb.append("#");
+                else
+                    sb.append(".");
+
+                return;
+            }
+
+            final ArrayList<Integer> workIndices = new ArrayList<>(givenIndices);
+            workIndices.add(0);
+
+            for (int i = getMinAtDim(givenIndices.size()); i <= getMaxAtDim(givenIndices.size()); i++) {
+                workIndices.set(givenIndices.size(), i);
+                fillStringBuilder(sb, workIndices);
+
+
+            }
+            if (givenIndices.size() == getMemoryIdxDimension() - 1) {
+                sb.append("\n");
+            }
+
+            if (!givenIndices.isEmpty() && givenIndices.size() < getMemoryIdxDimension() - 1) {
+                sb.append("---");
+                sb.append(givenIndices.size());
+                sb.append("---\n");
+            }
+
+        }
+
+        public String getPrintableString() {
+            StringBuilder sb = new StringBuilder();
+            fillStringBuilder(sb, new ArrayList<>());
+            return sb.toString();
         }
 
     }
