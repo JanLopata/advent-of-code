@@ -26,9 +26,11 @@ class Day17Test {
     @Test
     void testPart2_one_simpleData() {
 
-        String testData = "";
+        String testData = ".#.\n" +
+                "..#\n" +
+                "###";
 
-        Assertions.assertEquals(0L, tested.part2(testData));
+        Assertions.assertEquals(848L, tested.part2(testData));
 
     }
 

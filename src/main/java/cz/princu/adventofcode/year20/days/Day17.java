@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 public class Day17 extends Day {
@@ -27,7 +25,19 @@ public class Day17 extends Day {
 
         String[] input = data.split("\n");
 
-        GeneralMemory memory = new GeneralMemory(3);
+        return countActiveNodesAfterGivenSteps(input, 3, 6);
+    }
+
+    @Override
+    public Object part2(String data) {
+
+        String[] input = data.split("\n");
+
+        return countActiveNodesAfterGivenSteps(input, 4, 6);
+    }
+
+    private long countActiveNodesAfterGivenSteps(String[] input, int problemDimension, int steps) {
+        GeneralMemory memory = new GeneralMemory(problemDimension);
 
         for (int i = 0; i < input.length; i++) {
 
@@ -37,32 +47,31 @@ public class Day17 extends Day {
 
                 if (row.charAt(j) == '#') {
                     List<Integer> idxVars = new ArrayList<>();
-                    idxVars.add(0);
+                    for (int k = 0; k < problemDimension - 2; k++) {
+                        idxVars.add(0);
+                    }
                     idxVars.add(i);
                     idxVars.add(j);
                     memory.activatePosition(new GeneralIndex(idxVars));
                 }
             }
-
         }
-//        memory.activatePosition(new GeneralIndex(Stream.of(1, 1, 1).collect(Collectors.toList())));
-//        memory.activatePosition(new GeneralIndex(Stream.of(-1, 1, 1).collect(Collectors.toList())));
 
+        GeneralMemory workMemory = new GeneralMemory(problemDimension);
 
-        GeneralMemory workMemory = GeneralMemory.copyOf(memory);
-
-        for (int i = 0; i < 6; i++) {
-            log.info("Step {}\n{}", i, workMemory.getPrintableString());
+        for (int i = 0; i < steps; i++) {
+            log.info("Step {}\n{}", i, memory.getPrintableString());
 
             makeStep(memory, workMemory, new ArrayList<>());
 
             log.info("active {}", workMemory.getActiveCount());
             memory = workMemory;
+            workMemory = new GeneralMemory(problemDimension);
 
         }
         log.info("Final step\n{}", workMemory.getPrintableString());
 
-        return workMemory.getActiveCount();
+        return memory.getActiveCount();
     }
 
     private void makeStep(GeneralMemory oldState, GeneralMemory newState, List<Integer> givenIndices) {
@@ -71,18 +80,18 @@ public class Day17 extends Day {
             // final
 
             final GeneralIndex target = new GeneralIndex(givenIndices);
-            int vicinityActive = oldState.getActiveInVicinity(target);
+            final int vicinityActive = oldState.getActiveInVicinity(target);
+            final boolean activated = oldState.isActivated(target);
 
-            if (oldState.isActivated(target) && (vicinityActive == 2 || vicinityActive == 3)) {
-                newState.deactivatePosition(target);
+            if (activated && (vicinityActive == 2 || vicinityActive == 3)) {
+                newState.activatePosition(target);
             }
 
-            if (!oldState.isActivated(target) && vicinityActive == 3) {
+            if (!activated && vicinityActive == 3) {
                 newState.activatePosition(target);
             }
 
             return;
-
         }
 
         int workDimIndex = givenIndices.size();
@@ -100,23 +109,6 @@ public class Day17 extends Day {
 
     }
 
-    @Override
-    public Object part2(String data) {
-
-        String[] input = data.split("\n");
-
-        return 0L;
-    }
-
-
-    @EqualsAndHashCode
-    @Getter
-    @RequiredArgsConstructor
-    private static class ThreeIndex {
-        private final int x;
-        private final int y;
-        private final int z;
-    }
 
     @EqualsAndHashCode
     @ToString
@@ -124,7 +116,6 @@ public class Day17 extends Day {
     public static class GeneralIndex {
 
         private final int[] vars;
-
 
         // TODO: varargs
         public GeneralIndex(List<Integer> idx) {
@@ -140,7 +131,7 @@ public class Day17 extends Day {
 
         public GeneralIndex plus(GeneralIndex another) {
             if (another.getVars().length != this.vars.length)
-                throw new IllegalArgumentException("incompatibile dimensions");
+                throw new IllegalArgumentException("incompatible dimensions");
 
             List<Integer> newIndices = new ArrayList<>();
             for (int i = 0; i < vars.length; i++) {
