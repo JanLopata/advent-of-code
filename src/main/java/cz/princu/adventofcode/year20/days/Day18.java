@@ -1,12 +1,10 @@
 package cz.princu.adventofcode.year20.days;
 
 import cz.princu.adventofcode.common.Day;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.LinkedList;
 
 @Slf4j
 public class Day18 extends Day {
@@ -33,15 +31,107 @@ public class Day18 extends Day {
 
     private long evaluateExpression(String expression) {
 
+        LinkedList<Long> valuesStack = new LinkedList<>();
+        LinkedList<Character> operatorsStack = new LinkedList<>();
 
-        ParsingAutomaton parser = new ParsingAutomaton();
+        int i = 0;
 
-        for (char c : expression.toCharArray()) {
-            parser.parseNextChar(c);
+        valuesStack.add(null);
+        operatorsStack.add(null);
+
+        while (i < expression.length()) {
+
+            final char c = expression.charAt(i);
+            if (Character.isDigit(c)) {
+                String numberString = parseNumberAsString(expression, i);
+                final long parsedNumber = Long.parseLong(numberString);
+
+                if (valuesStack.getLast() == null) {
+                    valuesStack.removeLast();
+                    valuesStack.addLast(parsedNumber);
+                } else {
+                    // perform computation
+
+                    performOperation(valuesStack, operatorsStack, parsedNumber);
+                }
+
+                i += numberString.length();
+                continue;
+            }
+
+            if (c == '*' || c == '+') {
+
+                registerOperator(operatorsStack, c);
+
+            }
+
+            if (c == '(') {
+
+                valuesStack.add(null);
+                operatorsStack.add(null);
+
+            }
+
+            if (c == ')') {
+
+                operatorsStack.removeLast();
+                long currentNumber = valuesStack.pollLast();
+
+                performOperation(valuesStack, operatorsStack, currentNumber);
+            }
+
+            i++;
         }
 
-        return parser.evaluate();
+        return valuesStack.isEmpty() ? 0L : valuesStack.getLast();
+    }
 
+    private void registerOperator(LinkedList<Character> operatorsStack, char c) {
+        if (operatorsStack.getLast() != null)
+            throw new IllegalStateException("already defined operator");
+
+        operatorsStack.removeLast();
+        operatorsStack.add(c);
+    }
+
+    private void performOperation(LinkedList<Long> valuesStack, LinkedList<Character> operatorsStack, long currentNumber) {
+        Character operator = operatorsStack.pollLast();
+        operatorsStack.add(null);
+
+        if (operator == null) {
+            valuesStack.removeLast();
+            valuesStack.add(currentNumber);
+            return;
+        }
+
+        if (operator == '+') {
+            long opResult = valuesStack.pollLast() + currentNumber;
+            valuesStack.add(opResult);
+        }
+
+        if (operator == '*') {
+            long opResult = valuesStack.pollLast() * currentNumber;
+            valuesStack.add(opResult);
+        }
+    }
+
+    private String parseNumberAsString(String expression, int fromPositiong) {
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = fromPositiong; i < expression.length(); i++) {
+            final char c = expression.charAt(i);
+            if (Character.isDigit(c))
+                sb.append(c);
+            else
+                break;
+        }
+
+        return sb.toString();
+    }
+
+    @Override
+    public int getDayNumber() {
+        return 18;
     }
 
     @Override
@@ -52,164 +142,8 @@ public class Day18 extends Day {
         return 0L;
     }
 
-
-//    private static class FiniteAutoma
-
-    private static class ParsingAutomaton {
-
-        private String state = "init";
-        private int currentDepth = 0;
-        private Term currentTerm = new UnaryTerm(null);
-
-        private long currentParsedValue = 0;
-
-        public void parseNextChar(char c) {
-
-            if ("init".equals(state)) {
-
-                if (c == '(') {
-                    currentDepth += 1;
-                    currentTerm = new UnaryTerm(currentTerm);
-                }
-
-                if (Character.isDigit(c)) {
-                    currentParsedValue = currentParsedValue * 10 + (c - '0');
-                    state = "number";
-                }
-
-                return;
-            }
-
-            if ("number".equals(state)) {
-
-                if (c == '(')
-                    throw new IllegalArgumentException("cannot parse ( when parsing number");
-
-                if (Character.isDigit(c)) {
-                    currentParsedValue = currentParsedValue * 10 + (c - '0');
-                }
-
-                if (c == '+' || c == '*') {
-
-                    currentTerm = BinaryTerm.extendFromTerm(currentTerm);
-                    currentTerm = new UnaryTerm()
-
-                }
-
-            }
-
-
-        }
-
-        public long evaluate() {
-            currentTerm.evaluate();
-            return currentTerm.getValue();
-        }
-    }
-
-    @Getter
-    @Setter
-    @EqualsAndHashCode(of = {"left", "right", "operator"}, callSuper = false)
-    private static class BinaryTerm extends Term {
-        private Term left;
-        private Term right;
-        private char operator;
-
-        @Override
-        public void evaluate() {
-
-            if (this.computed)
-                return;
-
-            if (!left.computed) {
-                left.evaluate();
-            }
-
-            if (!right.computed) {
-                right.evaluate();
-            }
-
-            if (operator == '+')
-                this.value = left.value + right.value;
-
-            if (operator == '*')
-                this.value = left.value * right.value;
-
-            computed = true;
-        }
-
-        public static BinaryTerm extendFromTerm(Term term) {
-
-            final BinaryTerm result = new BinaryTerm();
-            result.computed = false;
-            result.left = term;
-
-            return result;
-        }
-
-    }
-
-
-    @Override
-    public int getDayNumber() {
-        return 18;
-    }
-
     @Override
     public int getYear() {
         return 2020;
-    }
-
-    @Getter
-    private static class SimpleTerm extends Term {
-
-        public SimpleTerm(long value, Term parent) {
-            this.value = value;
-            this.computed = true;
-            this.parent = parent;
-        }
-
-        public void evaluate() {
-            // nothing
-        }
-
-    }
-
-
-    @Setter
-    @Getter
-    @EqualsAndHashCode(of = {"term"}, callSuper = false)
-    private static class UnaryTerm extends Term {
-
-        public UnaryTerm(Term parentTerm) {
-            this.parent = parentTerm;
-        }
-
-        private Term term;
-
-        @Override
-        public void evaluate() {
-
-            if (computed)
-                return;
-
-            if (!term.isComputed()) {
-                term.evaluate();
-            }
-
-            this.value = term.value;
-            this.computed = true;
-        }
-    }
-
-    @Getter
-    private abstract static class Term {
-
-        protected Long value;
-        protected boolean computed = false;
-        protected Term parent;
-
-        public abstract void evaluate();
-
     }
 }
