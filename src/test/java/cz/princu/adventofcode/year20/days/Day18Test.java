@@ -23,9 +23,14 @@ class Day18Test {
     @Test
     void testPart2_one_simpleData() {
 
-        String testData = "";
+        String testData =
+                "1 + (2 * 3) + (4 * (5 + 6))\n" +
+                "    2 * 3 + (4 * 5)\n" +
+                        "    5 + (8 * 3 + 9 + 3 * 4 * 3)\n" +
+                        "    5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))\n" +
+                        "    ((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2";
 
-//        Assertions.assertEquals(848L, tested.part2(testData));
+        Assertions.assertEquals(693942L, tested.part2(testData));
 
     }
 
