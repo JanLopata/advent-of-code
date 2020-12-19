@@ -227,7 +227,7 @@ public class Day18 extends Day {
         if (reversed) {
             return 0;
         } else {
-            return expression.length() - 1;
+            return expression.length();
         }
 
     }
@@ -240,26 +240,46 @@ public class Day18 extends Day {
 
     private String addPlusParenthesis(String expression) {
 
+        String result = expression;
+
+        int priorityOperatorCount = countPriorityOperators(expression);
+
+        for (int i = 0; i < priorityOperatorCount; i++) {
+            result = addParenthesis(result, i);
+        }
+
+        return result;
+
+    }
+
+    private String addParenthesis(String expression, int skip) {
         String specialReversedExp = new StringBuilder(expression).reverse().toString()
                 .replace(")", "$").replace("(", ")").replace("$", "(");
 
-
         List<CharWithIndex> parenthesisToAdd = new ArrayList<>();
+
+        int currentSkip = 0;
 
         for (int i = 0; i < expression.length(); i++) {
 
             final char c = expression.charAt(i);
             if (c == '+') {
 
+                if (currentSkip < skip) {
+                    currentSkip++;
+                    continue;
+                }
+
                 // left
                 addLeftParenthesisCandidate(expression, specialReversedExp, parenthesisToAdd, i);
 
                 // right
                 addRightParenthesisCandidate(expression, specialReversedExp, parenthesisToAdd, i);
+
+                break;
             }
 
         }
-
 
         parenthesisToAdd.sort(Comparator.comparing(CharWithIndex::getIndex));
 
@@ -272,7 +292,16 @@ public class Day18 extends Day {
 
 
         return sb.toString();
+    }
 
+    private int countPriorityOperators(String expression) {
+        int priorityOperatorCount = 0;
+        for (char c : expression.toCharArray()) {
+            if (c == '+') {
+                priorityOperatorCount++;
+            }
+        }
+        return priorityOperatorCount;
     }
 
     private void addRightParenthesisCandidate(String expression, String specialReversedExp, List<CharWithIndex> parenthesisToAdd, int operatorPosition) {
