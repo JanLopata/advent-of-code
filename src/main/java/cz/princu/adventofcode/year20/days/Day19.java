@@ -30,6 +30,25 @@ public class Day19 extends Day {
         String rulesPart = input[0];
         String messagesPart = input[1];
 
+        return computeValidMessages(rulesPart, messagesPart);
+    }
+
+    @Override
+    public Object part2(String data) {
+
+        String rulesToOverwrite = "\n8: 42 | 42 8\n" +
+                "11: 42 31 | 42 11 31";
+
+        String[] input = data.split("\n\n");
+
+        String rulesPart = input[0] + rulesToOverwrite;
+        String messagesPart = input[1];
+
+        return computeValidMessages(rulesPart, messagesPart);
+
+    }
+
+    private long computeValidMessages(String rulesPart, String messagesPart) {
         final Map<Long, Rule> rulesMap = parseRulesMap(rulesPart);
 
         long result = 0;
@@ -45,8 +64,6 @@ public class Day19 extends Day {
                 }
             }
         }
-
-
         return result;
     }
 
@@ -93,7 +110,6 @@ public class Day19 extends Day {
 
         }
     }
-
     private Map<Long, Rule> parseRulesMap(String rulesPart) {
         final String[] rulesRows = rulesPart.split("\n");
         Map<Long, Rule> ruleMap = new HashMap<>();
@@ -127,7 +143,6 @@ public class Day19 extends Day {
         }
         return ruleMap;
     }
-
     @AllArgsConstructor
     @Getter
     @Setter
@@ -135,19 +150,13 @@ public class Day19 extends Day {
     private static class Rule {
 
         private Long number;
+
         private List<List<Long>> subRules;
+
         private Character character;
 
     }
 
-
-    @Override
-    public Object part2(String data) {
-
-        String[] input = data.split("\n");
-
-        return 0L;
-    }
 
 
     @Override
