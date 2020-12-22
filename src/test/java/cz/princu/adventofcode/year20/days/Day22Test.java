@@ -31,9 +31,21 @@ class Day22Test {
     @Test
     void testPart2_one_simpleData() {
 
-        String testData = "";
+        String testData = "Player 1:\n" +
+                "9\n" +
+                "2\n" +
+                "6\n" +
+                "3\n" +
+                "1\n" +
+                "\n" +
+                "Player 2:\n" +
+                "5\n" +
+                "8\n" +
+                "4\n" +
+                "7\n" +
+                "10";
 
-        Assertions.assertEquals(0L, tested.part2(testData));
+        Assertions.assertEquals(291L, tested.part2(testData));
 
     }
 
