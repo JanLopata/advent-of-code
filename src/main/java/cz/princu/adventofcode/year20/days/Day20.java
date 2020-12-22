@@ -1,10 +1,12 @@
 package cz.princu.adventofcode.year20.days;
 
 import cz.princu.adventofcode.common.Day;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Day20 extends Day {
@@ -25,25 +28,94 @@ public class Day20 extends Day {
 
         String[] input = data.split("\n\n");
 
-        List<Tile> tiles = new ArrayList<>();
+        HashMap<Long, Tile> tiles = new HashMap<>();
         for (String s : input) {
-            tiles.add(initTile(s));
+
+            final Tile tile = initTile(s);
+            tiles.put(tile.getId(), tile);
         }
 
         Map<String, Set<Long>> knownSides = new HashMap<>();
 
-        for (Tile tile : tiles) {
+        for (Tile tile : tiles.values()) {
 
-            final char[][] topSides = tile.getTopSides();
-            for (char[] topSide : topSides) {
-                final String sideAsString = String.valueOf(topSide);
-                knownSides.putIfAbsent(sideAsString, new HashSet<>());
-                knownSides.get(sideAsString).add(tile.getId());
+            final List<String> topSides = tile.getTopSides();
+
+            for (int i = 0; i < topSides.size(); i++) {
+                String sideAsString = String.valueOf(topSides.get(i));
+                final String reversedString = StringUtils.reverse(sideAsString);
+                knownSides.putIfAbsent(reversedString, new HashSet<>());
+                knownSides.get(reversedString).add(tile.getId() * 4 + i);
             }
 
         }
 
-        return 0L;
+        Set<Tile> usedTiles = new HashSet<>();
+
+        Set<Long> result = new HashSet<>();
+
+        final Tile tile = tiles.values().stream().findAny().orElse(null);
+        usedTiles.add(tile);
+
+        solve(tiles, usedTiles, knownSides, result);
+
+        return result.stream().reduce(Long::sum);
+
+    }
+
+    private void solve(HashMap<Long, Tile> tiles, Set<Tile> usedTiles, Map<String, Set<Long>> knownSides, Set<Long> result) {
+
+        if (usedTiles.size() == tiles.size()) {
+            log.info("solved but what now?");
+            return;
+        }
+
+        final List<Tile> notCompletelyUsed = usedTiles.stream().filter(it -> it.getUsedSides().size() < 4).collect(Collectors.toList());
+
+        for (Tile usedTile : notCompletelyUsed) {
+
+            for (int variant = 0; variant < 4; variant++) {
+
+                if (usedTile.getUsedSides().contains(variant))
+                    continue;
+
+                if (!knownSides.containsKey(usedTile.getTopSides().get(variant)))
+                    continue;
+
+                // find matching tile
+                for (Long matchingTileId : knownSides.get(usedTile.getTopSides().get(variant))) {
+
+
+                    Tile matchingTile = tiles.get(matchingTileId / 4);
+                    int matchingVariant = (((int) (matchingTileId % 4)) + 2) % 4;
+
+                    if (usedTiles.contains(matchingTile))
+                        continue;
+
+                    // use
+                    usedTile.getUsedSides().add(variant);
+                    matchingTile.getUsedSides().add(matchingVariant);
+                    usedTiles.add(matchingTile);
+
+                    solve(tiles, usedTiles, knownSides, result);
+
+                    // unuse
+                    usedTile.getUsedSides().remove(variant);
+                    matchingTile.getUsedSides().remove(matchingVariant);
+                    usedTiles.remove(matchingTile);
+
+                }
+
+
+                // use
+
+
+                // unuse
+            }
+
+        }
+
+
     }
 
     @Override
@@ -72,6 +144,7 @@ public class Day20 extends Day {
     @ToString
     @Getter
     @Setter
+    @EqualsAndHashCode(of = "id")
     private static class Tile {
 
         private char[][] grid;
@@ -80,22 +153,24 @@ public class Day20 extends Day {
         private char[][] v3;
 
         private long id;
-        private int usedVariant;
 
-        public char[][] getTopSides() {
+        private Set<Integer> usedSides;
 
-            final char[][] sides = new char[4][];
-            sides[0] = grid[0];
-            sides[1] = grid[1];
-            sides[2] = grid[2];
-            sides[3] = grid[3];
+        public List<String> getTopSides() {
 
-            return sides;
+            List<String> result = new ArrayList<>(4);
+            result.add(String.valueOf(grid[0]));
+            result.add(String.valueOf(v1[0]));
+            result.add(String.valueOf(v2[0]));
+            result.add(String.valueOf(v3[0]));
+
+            return result;
         }
 
         public Tile(char[][] grid, long id) {
 
             this.grid = grid;
+            this.id = id;
 
             if (grid.length != grid[0].length)
                 throw new IllegalArgumentException("uneven sides");
@@ -103,6 +178,8 @@ public class Day20 extends Day {
             v1 = rotate(1, grid);
             v2 = rotate(2, grid);
             v3 = rotate(3, grid);
+
+            usedSides = new HashSet<>(4);
 
         }
 
