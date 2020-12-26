@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -59,6 +60,22 @@ public class Day20 extends Day {
             return;
         }
 
+        if (tileManager.getCurrentTile() >= tileManager.getTileCount() - 2) {
+
+            final Optional<TileConfiguration> lastTile = tileFactory.getPossibleTiles(null, 0)
+                    .stream()
+                    .filter(it -> !tileManager.getUsedTiles().contains(it.getTile()))
+                    .findAny();
+
+            if (lastTile.isPresent()) {
+                tileManager.addTile(lastTile.get());
+                solve(tileFactory, tileManager, result);
+                tileManager.removeLast();
+            }
+
+        }
+
+
         final Set<TileConfiguration> candidates = getCandidates(tileFactory, tileManager);
 
         for (TileConfiguration candidate : candidates) {
@@ -87,9 +104,9 @@ public class Day20 extends Day {
                 continue;
 
             final int oppositeSide = (neighbourDirection + 2) % 4;
-            final String sideString = tileConfiguration.getSide(oppositeSide);
+            final String sideString = tileConfiguration.getSide(neighbourDirection);
 
-            final Set<TileConfiguration> candidateSet = tileFactory.getPossibleTiles(sideString, neighbourDirection);
+            final Set<TileConfiguration> candidateSet = tileFactory.getPossibleTiles(sideString, oppositeSide);
 
             if (candidates == null) {
                 candidates = candidateSet;
