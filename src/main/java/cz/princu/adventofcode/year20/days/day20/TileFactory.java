@@ -1,15 +1,19 @@
 package cz.princu.adventofcode.year20.days.day20;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class TileFactory {
 
     private final List<SideSearch> sideSearchList;
     private final List<Tile> allTiles;
+    @Getter
     private final List<TileConfiguration> tileConfigurationList;
 
     public static TileFactory init(List<Tile> allAvailableTiles) {
@@ -38,13 +42,18 @@ public class TileFactory {
             }
         }
 
-        return new TileFactory(sideSearchList, allAvailableTiles, tileConfigurationList);
+        return new TileFactory(sideSearchList,
+                new ArrayList<>(allAvailableTiles),
+                tileConfigurationList);
 
     }
 
-    public List<TileConfiguration> getPossibleTiles(String sideString, int side) {
+    public Set<TileConfiguration> getPossibleTiles(String sideString, int side) {
 
-        return sideSearchList.get(side).getConfiguration(sideString);
+        if (sideString == null)
+            return new HashSet<>(tileConfigurationList);
+
+        return new HashSet<>(sideSearchList.get(side).getConfiguration(sideString));
 
     }
 

@@ -123,6 +123,33 @@ class Day20Test {
     }
 
     @Test
+    void testPart1_easyData() {
+
+        String testData = "Tile 1:\n" +
+                "101\n" +
+                "001\n" +
+                "221\n" +
+                "\n" +
+                "Tile 2:\n" +
+                "111\n" +
+                "400\n" +
+                "402\n" +
+                "\n" +
+                "Tile 3:\n" +
+                "303\n" +
+                "300\n" +
+                "122\n" +
+                "\n" +
+                "Tile 4:\n" +
+                "404\n" +
+                "400\n" +
+                "133";
+
+        Assertions.assertEquals(24L, tested.part1(testData));
+
+    }
+
+    @Test
     void testPart2_one_simpleData() {
 
         String testData = "";

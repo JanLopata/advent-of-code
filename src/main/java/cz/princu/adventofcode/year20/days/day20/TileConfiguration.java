@@ -2,9 +2,11 @@ package cz.princu.adventofcode.year20.days.day20;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 
 @RequiredArgsConstructor
+@ToString
 public class TileConfiguration {
 
     @Getter
