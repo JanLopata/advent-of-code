@@ -11,7 +11,7 @@ class Day23Test {
     void testPart1_simpleData() {
 
 
-        tested.setRounds(10);
+        tested.setPart1Rounds(10);
 
         String testData = "389125467";
 
@@ -20,7 +20,7 @@ class Day23Test {
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         String testData = "389125467";
 

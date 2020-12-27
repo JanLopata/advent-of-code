@@ -1,12 +1,18 @@
 package cz.princu.adventofcode.year20.days;
 
 import cz.princu.adventofcode.common.Day;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,119 +23,174 @@ public class Day23 extends Day {
     }
 
     @Setter
-    private int rounds = 100;
+    private int part1Rounds = 100;
+
+    @Setter
+    private int part2Rounds = 10_000_000;
 
     @Override
     public Object part1(String data) {
 
-        LinkedList<Integer> cups = new LinkedList<>();
+        Map<Integer, Nexter> nexterMap = new HashMap<>();
 
+        Nexter first = null;
+        Nexter previous = null;
+        Nexter last = null;
         for (char c : data.toCharArray()) {
-            cups.add(Integer.parseInt(String.valueOf(c)));
+
+            Nexter nexter = new Nexter(Integer.parseInt(String.valueOf(c)));
+            nexterMap.put(nexter.getValue(), nexter);
+
+            if (first == null)
+                first = nexter;
+
+            if (previous != null)
+                previous.setNext(nexter);
+
+            previous = nexter;
+            last = nexter;
         }
 
-        for (int i = 0; i < rounds; i++) {
+        assert last != null;
+        last.setNext(first);
 
-            performMove(cups);
+        int max = nexterMap.keySet().stream()
+                .max(Comparator.naturalOrder()).orElseThrow(() -> new IllegalStateException("no max found"));
+        Nexter current = first;
+        for (int i = 0; i < part1Rounds; i++) {
+
+            current = performMove(nexterMap, current, max);
 
         }
 
-        rotate(cups, 1);
+        List<Integer> resultList = new ArrayList<>(max);
 
-        log.info("result: {}", cups.stream().map(String::valueOf).collect(Collectors.joining(" ")));
+        Nexter work = nexterMap.get(1);
+        for (int i = 0; i < nexterMap.size(); i++) {
+            resultList.add(work.getValue());
+            work = work.getNext();
+        }
 
+        log.info("result: {}", resultList.stream().map(String::valueOf).collect(Collectors.joining(" ")));
 
-        return cups.stream().skip(1).map(String::valueOf).collect(Collectors.joining());
+        return resultList.stream().skip(1).map(String::valueOf).collect(Collectors.joining());
     }
 
-    private void rotate(LinkedList<Integer> cups, int current) {
+    private Nexter performMove(Map<Integer, Nexter> cups, Nexter current, int max) {
 
-        while (cups.getFirst() != current) {
-            Integer first = cups.pollFirst();
-            cups.add(first);
-        }
+        List<Nexter> takenAway = new ArrayList<>(3);
 
-    }
-
-    // current value is always first
-    private void performMove(LinkedList<Integer> cups) {
-
-//        log.info("{}", cups.stream().map(String::valueOf).collect(Collectors.joining(" ")));
-
-        Integer first = cups.pollFirst();
-
-        LinkedList<Integer> three = new LinkedList<>();
+        Nexter work = current;
         for (int i = 0; i < 3; i++) {
-            three.add(cups.pollFirst());
+            work = work.getNext();
+            takenAway.add(work);
         }
 
-        int destination = chooseDestinationCup(cups, first - 1);
-        cups.addLast(first);
+        disconnect(current, takenAway);
 
-        rotate(cups, destination);
-        cups.removeFirst();
+        Nexter destination = chooseDestination(cups, current, takenAway, max);
 
-        for (int i = 0; i < 3; i++) {
-            cups.addFirst(three.pollLast());
-        }
+        connect(destination, takenAway);
 
-        cups.addFirst(destination);
-
-        rotate(cups, first);
-        rotate(cups, cups.get(1));
-
-//        log.info("{} destination {}",
-//                cups.stream().map(String::valueOf).collect(Collectors.joining(" ")),
-//                destination);
+        return current.getNext();
 
     }
 
-    private int chooseDestinationCup(LinkedList<Integer> cups, Integer initDestination) {
+    private Nexter chooseDestination(Map<Integer, Nexter> cups, Nexter current, List<Nexter> takenAway, int max) {
 
-        final Set<Integer> existing = cups.stream().collect(Collectors.toSet());
+        Set<Integer> ignored = takenAway.stream().map(Nexter::getValue).collect(Collectors.toSet());
 
-        int destination = initDestination;
+        int value = current.getValue() - 1;
         while (true) {
 
-            if (existing.contains(destination))
-                return destination;
+            if (cups.containsKey(value) && !ignored.contains(value))
+                return cups.get(value);
 
-            if (destination <= 1)
-                destination = 10;
-
-            destination--;
+            value--;
+            if (value < 0)
+                value = max;
         }
+    }
+
+    private void connect(Nexter destination, List<Nexter> takenAway) {
+        final Nexter right = destination.getNext();
+
+        destination.setNext(takenAway.get(0));
+        takenAway.get(2).setNext(right);
+
+    }
+
+    private void disconnect(Nexter current, List<Nexter> takenAway) {
+
+        current.setNext(takenAway.get(2).getNext());
+        takenAway.get(2).setNext(null);
 
     }
 
     @Override
     public Object part2(String data) {
 
-        String[] input = data.split("\n");
+        Map<Integer, Nexter> nexterMap = new HashMap<>();
 
-        LinkedList<Integer> cups = new LinkedList<>();
-
+        Nexter first = null;
+        Nexter previous = null;
+        Nexter last = null;
         for (char c : data.toCharArray()) {
-            cups.add(Integer.parseInt(String.valueOf(c)));
+
+            Nexter nexter = new Nexter(Integer.parseInt(String.valueOf(c)));
+            nexterMap.put(nexter.getValue(), nexter);
+
+            if (first == null)
+                first = nexter;
+
+            if (previous != null)
+                previous.setNext(nexter);
+
+            previous = nexter;
+            last = nexter;
+        }
+        assert last != null;
+        int max = nexterMap.keySet().stream()
+                .max(Comparator.naturalOrder()).orElseThrow(() -> new IllegalStateException("no max found"));
+
+        for (int i = max + 1; i <= 1_000_000; i++) {
+            Nexter nexter = new Nexter(i);
+            nexterMap.put(nexter.getValue(), nexter);
+            previous.setNext(nexter);
+
+            previous = nexter;
+            last = nexter;
         }
 
-        Set<Integer> used = new HashSet<>(cups);
-        for (int i = 1; i <= 1_000_000; i++) {
+        max = nexterMap.keySet().stream()
+                .max(Comparator.naturalOrder()).orElseThrow(() -> new IllegalStateException("no max found"));
 
-            if (!used.contains(i))
-                cups.add(i);
-        }
+        last.setNext(first);
 
-        for (int i = 0; i < rounds; i++) {
+        Nexter current = first;
+        for (int i = 0; i < part2Rounds; i++) {
 
-            log.info("Move {}", i);
-            performMove(cups);
+            current = performMove(nexterMap, current, max);
 
         }
 
-        return cups.get(1) * (long) cups.get(2);
+        Nexter work = nexterMap.get(1);
+
+        return work.getNext().getValue() * (long) work.getNext().getNext().getValue();
+
     }
 
+
+    @Getter
+    @Setter
+    @ToString(of = "value")
+    @RequiredArgsConstructor
+    private static class Nexter {
+
+        private final int value;
+        private Nexter next;
+
+    }
 
     @Override
     public int getDayNumber() {
