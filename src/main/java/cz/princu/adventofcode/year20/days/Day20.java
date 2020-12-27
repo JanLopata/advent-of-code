@@ -60,22 +60,6 @@ public class Day20 extends Day {
             return;
         }
 
-        if (tileManager.getCurrentTile() >= tileManager.getTileCount() - 2) {
-
-            final Optional<TileConfiguration> lastTile = tileFactory.getPossibleTiles(null, 0)
-                    .stream()
-                    .filter(it -> !tileManager.getUsedTiles().contains(it.getTile()))
-                    .findAny();
-
-            if (lastTile.isPresent()) {
-                tileManager.addTile(lastTile.get());
-                solve(tileFactory, tileManager, result);
-                tileManager.removeLast();
-            }
-
-        }
-
-
         final Set<TileConfiguration> candidates = getCandidates(tileFactory, tileManager);
 
         for (TileConfiguration candidate : candidates) {
