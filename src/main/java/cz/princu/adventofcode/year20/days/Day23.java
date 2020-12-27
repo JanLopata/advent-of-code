@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class Day23 extends Day {
     // current value is always first
     private void performMove(LinkedList<Integer> cups) {
 
-        log.info("{}", cups.stream().map(String::valueOf).collect(Collectors.joining(" ")));
+//        log.info("{}", cups.stream().map(String::valueOf).collect(Collectors.joining(" ")));
 
         Integer first = cups.pollFirst();
 
@@ -77,9 +78,9 @@ public class Day23 extends Day {
         rotate(cups, first);
         rotate(cups, cups.get(1));
 
-        log.info("{} destination {}",
-                cups.stream().map(String::valueOf).collect(Collectors.joining(" ")),
-                destination);
+//        log.info("{} destination {}",
+//                cups.stream().map(String::valueOf).collect(Collectors.joining(" ")),
+//                destination);
 
     }
 
@@ -106,7 +107,27 @@ public class Day23 extends Day {
 
         String[] input = data.split("\n");
 
-        return 0L;
+        LinkedList<Integer> cups = new LinkedList<>();
+
+        for (char c : data.toCharArray()) {
+            cups.add(Integer.parseInt(String.valueOf(c)));
+        }
+
+        Set<Integer> used = new HashSet<>(cups);
+        for (int i = 1; i <= 1_000_000; i++) {
+
+            if (!used.contains(i))
+                cups.add(i);
+        }
+
+        for (int i = 0; i < rounds; i++) {
+
+            log.info("Move {}", i);
+            performMove(cups);
+
+        }
+
+        return cups.get(1) * (long) cups.get(2);
     }
 
 
