@@ -149,6 +149,60 @@ class Day20Test {
 
     }
 
+
+    @Test
+    void testPart1_easyData2() {
+
+        String testData = "" +
+                "Tile 1:\n" +
+                "001\n" +
+                "100\n" +
+                "020\n" +
+                "\n" +
+                "Tile 2:\n" +
+                "X30\n" +
+                "402\n" +
+                "020\n" +
+                "\n" +
+                "Tile 3:\n" +
+                "300\n" +
+                "005\n" +
+                "04X\n" +
+                "\n" +
+                "Tile 4:\n" +
+                "010\n" +
+                "407\n" +
+                "060\n" +
+                "\n" +
+                "Tile 5:\n" +
+                "03X\n" +
+                "709\n" +
+                "080\n" +
+                "\n" +
+                "Tile 6:\n" +
+                "X50\n" +
+                "906\n" +
+                "0A0\n" +
+                "\n" +
+                "Tile 7:\n" +
+                "060\n" +
+                "00B\n" +
+                "700\n" +
+                "\n" +
+                "Tile 8:\n" +
+                "080\n" +
+                "C0B\n" +
+                "080\n" +
+                "\n" +
+                "Tile 9:\n" +
+                "0C0\n" +
+                "00A\n" +
+                "900";
+
+        Assertions.assertEquals((long) 3 * 7 * 9, tested.part1(testData));
+
+    }
+
     @Test
     void testPart2_one_simpleData() {
 
