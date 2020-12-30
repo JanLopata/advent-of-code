@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public class TileFactory {
@@ -26,19 +28,22 @@ public class TileFactory {
             sideSearchList.add(new SideSearch());
         }
 
+        List<Boolean> booleans = Stream.of(Boolean.TRUE, Boolean.FALSE).collect(Collectors.toList());
+
         for (Tile tile : allAvailableTiles) {
+            for (boolean flip : booleans) {
+                for (int variant = 0; variant < 4; variant++) {
 
-            for (int variant = 0; variant < 4; variant++) {
+                    final TileConfiguration tileInConf = new TileConfiguration(tile, variant, flip);
+                    tileConfigurationList.add(tileInConf);
 
-                final TileConfiguration tileInConf = new TileConfiguration(tile, variant);
-                tileConfigurationList.add(tileInConf);
+                    for (int side = 0; side < 4; side++) {
+                        final String sideString = tileInConf.getSide(side);
 
-                for (int side = 0; side < 4; side++) {
-                    final String sideString = tileInConf.getSide(side);
+                        sideSearchList.get(side).addConfiguration(sideString, tileInConf);
+                    }
 
-                    sideSearchList.get(side).addConfiguration(sideString, tileInConf);
                 }
-
             }
         }
 

@@ -21,9 +21,12 @@ public class Tile {
     private char[][] v2;
     private char[][] v3;
 
-    private long id;
+    private char[][] gridF;
+    private char[][] v1F;
+    private char[][] v2F;
+    private char[][] v3F;
 
-    private Set<Integer> usedSides;
+    private long id;
 
     public static Tile initTile(String input) {
 
@@ -62,8 +65,27 @@ public class Tile {
         v2 = rotate(2, grid);
         v3 = rotate(3, grid);
 
-        usedSides = new HashSet<>(4);
+        gridF = flip(grid);
+        v1F = rotate(1, gridF);
+        v2F = rotate(2, gridF);
+        v3F = rotate(3, gridF);
 
+    }
+
+    private static char[][] flip(char[][] original) {
+        final int size = original.length;
+        char[][] result = new char[size][];
+
+        for (int i = 0; i < size; i++) {
+            char[] resultRow = new char[size];
+
+            for (int j = 0; j < size; j++) {
+
+                resultRow[size - j - 1] = original[i][j];
+            }
+            result[i] = resultRow;
+        }
+        return result;
     }
 
     private static char[][] rotate(int variant, char[][] original) {

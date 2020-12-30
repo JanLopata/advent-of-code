@@ -13,22 +13,42 @@ public class TileConfiguration {
     private final Tile tile;
     @Getter
     private final int variant;
+    @Getter
+    private final boolean flip;
     private final String[] cache = new String[4];
 
     char[][] getGrid() {
 
-        if (variant == 0)
-            return tile.getGrid();
+        if (!flip) {
+            if (variant == 0)
+                return tile.getGrid();
 
-        if (variant == 1)
-            return tile.getV1();
+            if (variant == 1)
+                return tile.getV1();
 
-        if (variant == 2) {
-            return tile.getV2();
-        }
 
-        if (variant == 3) {
-            return tile.getV3();
+            if (variant == 2) {
+                return tile.getV2();
+            }
+
+            if (variant == 3) {
+                return tile.getV3();
+            }
+        } else {
+
+            if (variant == 0)
+                return tile.getGridF();
+
+            if (variant == 1)
+                return tile.getV1F();
+
+            if (variant == 2) {
+                return tile.getV2F();
+            }
+
+            if (variant == 3) {
+                return tile.getV3F();
+            }
         }
 
         throw new IllegalArgumentException("unknown variant");
