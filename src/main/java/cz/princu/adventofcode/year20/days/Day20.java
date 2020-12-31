@@ -1,6 +1,7 @@
 package cz.princu.adventofcode.year20.days;
 
 import cz.princu.adventofcode.common.Day;
+import cz.princu.adventofcode.year20.days.day20.SeaMonster;
 import cz.princu.adventofcode.year20.days.day20.Tile;
 import cz.princu.adventofcode.year20.days.day20.TileConfiguration;
 import cz.princu.adventofcode.year20.days.day20.TileFactory;
@@ -9,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -57,6 +58,7 @@ public class Day20 extends Day {
 
             corners.stream().map(it -> it.getTile()).map(it -> it.getId()).forEach(result::add);
 
+            tileManager.freeze();
             return;
         }
 
@@ -88,9 +90,9 @@ public class Day20 extends Day {
                 continue;
 
             final int oppositeSide = (neighbourDirection + 2) % 4;
-            final String sideString = tileConfiguration.getSide(neighbourDirection);
+            final String sideString = tileConfiguration.getSide(oppositeSide);
 
-            final Set<TileConfiguration> candidateSet = tileFactory.getPossibleTiles(sideString, oppositeSide);
+            final Set<TileConfiguration> candidateSet = tileFactory.getPossibleTiles(sideString, neighbourDirection);
 
             if (candidates == null) {
                 candidates = candidateSet;
@@ -108,7 +110,67 @@ public class Day20 extends Day {
     @Override
     public Object part2(String data) {
 
-        String[] input = data.split("\n");
+        String[] input = data.split("\n\n");
+
+        List<Tile> tiles = new ArrayList<>();
+        for (String s : input) {
+            final Tile tile = Tile.initTile(s);
+            tiles.add(tile);
+        }
+        TileFactory tileFactory = TileFactory.init(tiles);
+        TileManager tileManager = TileManager.init(tiles.size());
+
+        solve(tileFactory, tileManager, new HashSet<>());
+        char[][] assembled = tileManager.assemble();
+
+        StringBuilder assembleString = new StringBuilder();
+        assembleString.append("Tile: 0");
+        for (char[] chars : assembled) {
+            assembleString.append("\n");
+            for (char chachar : chars) {
+                assembleString.append(chachar);
+            }
+        }
+        log.info("Assembled: {}", assembleString.toString());
+        final Tile monsterTile = Tile.initTile(assembleString.toString());
+
+        TileFactory monsterTileFactory = TileFactory.init(Collections.singletonList(monsterTile));
+
+        String monsterText = "" +
+                "                  # \n" +
+                "#    ##    ##    ###\n" +
+                " #  #  #  #  #  #   ";
+
+        SeaMonster seaMonster = new SeaMonster(monsterText);
+
+        for (TileConfiguration monsterTileConfig : monsterTileFactory.getTileConfigurationList()) {
+
+            // destructive - breaks encapsulation - beware!
+            final char[][] grid = monsterTileConfig.getGrid();
+
+            int monsterCount = 0;
+            while (seaMonster.findAndReplaceMonster(grid)) {
+                monsterCount++;
+            }
+
+
+            if (monsterCount > 0) {
+
+                log.info("Found {} see monster(s):\n{}", monsterCount, monsterTileConfig.gridAsText());
+
+                long hashTiles = 0;
+                for (char[] chars : grid) {
+                    for (char aChar : chars) {
+                        if (aChar == '#')
+                            hashTiles++;
+                    }
+                }
+                return hashTiles;
+
+            }
+
+        }
+
 
         return 0L;
     }

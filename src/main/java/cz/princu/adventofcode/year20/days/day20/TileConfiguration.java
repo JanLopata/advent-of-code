@@ -17,7 +17,7 @@ public class TileConfiguration {
     private final boolean flip;
     private final String[] cache = new String[4];
 
-    char[][] getGrid() {
+    public char[][] getGrid() {
 
         if (!flip) {
             if (variant == 0)
@@ -52,6 +52,22 @@ public class TileConfiguration {
         }
 
         throw new IllegalArgumentException("unknown variant");
+    }
+
+    public String gridAsText() {
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        final char[][] grid = getGrid();
+        for (char[] chars : grid) {
+            stringBuilder.append("\n");
+            for (char aChar : chars) {
+                stringBuilder.append(aChar);
+            }
+        }
+
+        stringBuilder.replace(0, 1, "");
+        return stringBuilder.toString();
     }
 
     /**
