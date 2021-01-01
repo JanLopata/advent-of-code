@@ -69,6 +69,13 @@ public class Day22 extends Day {
         player1Deck.add(p2Value);
     }
 
+    private void playerOneWonTheGame(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck, int step, int depth) {
+        log.info("Step {} depth {} - {} vs {} first won the game", step, depth);
+
+        player1Deck.addAll(player2Deck);
+        player2Deck.clear();
+    }
+
     private long computeResultValue(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck) {
         long result = 0;
 
@@ -129,9 +136,7 @@ public class Day22 extends Day {
     private boolean playRecursively(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck, KnownConfigurationChecker checker, int step, int depth) {
 
         if (checker.testKnown(player1Deck, player2Deck)) {
-            Long p1Value = player1Deck.pollFirst();
-            Long p2Value = player2Deck.pollFirst();
-            playerOneWon(player1Deck, step, depth, p1Value, p2Value);
+            playerOneWonTheGame(player1Deck, player2Deck, step, depth);
             return true;
         }
 
@@ -143,7 +148,7 @@ public class Day22 extends Day {
             boolean player1Wins = playRecursiveOneGame(
                     new LinkedList<>(player1Deck),
                     new LinkedList<>(player2Deck),
-                    checker,
+                    new KnownConfigurationChecker(),
                     depth + 1);
 
             if (player1Wins) {
@@ -176,8 +181,8 @@ public class Day22 extends Day {
 
             final boolean result = player1Known.contains(player1Deck) && player2Known.contains(player2Deck);
 
-            player1Known.add(player1Deck);
-            player2Known.add(player2Deck);
+            player1Known.add(new LinkedList<>(player1Deck));
+            player2Known.add(new LinkedList<>(player2Deck));
 
             return result;
 

@@ -49,4 +49,26 @@ class Day22Test {
 
     }
 
+
+    @Test
+    void testPart2_prevent_infinite() {
+
+        String testData = "Player 1:\n" +
+                "43\n" +
+                "19\n" +
+                "\n" +
+                "Player 2:\n" +
+                "2\n" +
+                "29\n" +
+                "14";
+
+        // not sure about value
+        Assertions.assertEquals(369L, tested.part2(testData));
+
+    }
+
+
+
+
+
 }
