@@ -22,22 +22,22 @@ public class Day22 extends Day {
 
         String[] input = data.split("\n\n");
 
-        final LinkedList<Long> player1Deck = parsePlayerDeck(input[0]);
-        final LinkedList<Long> player2Deck = parsePlayerDeck(input[1]);
+        final LinkedList<Integer> player1Deck = parsePlayerDeck(input[0]);
+        final LinkedList<Integer> player2Deck = parsePlayerDeck(input[1]);
 
         performOneGame(player1Deck, player2Deck);
 
         return computeResultValue(player1Deck, player2Deck);
     }
 
-    private void performOneGame(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck) {
+    private void performOneGame(LinkedList<Integer> player1Deck, LinkedList<Integer> player2Deck) {
         int step = 0;
         while (!(player1Deck.isEmpty() || player2Deck.isEmpty())) {
 
             step++;
 
-            Long p1Value = player1Deck.pollFirst();
-            Long p2Value = player2Deck.pollFirst();
+            Integer p1Value = player1Deck.pollFirst();
+            Integer p2Value = player2Deck.pollFirst();
 
             if (p1Value.equals(p2Value)) {
                 log.info("Step {} - {} vs {} - equals", step, p1Value, p2Value);
@@ -57,31 +57,31 @@ public class Day22 extends Day {
         }
     }
 
-    private void playerTwoWon(LinkedList<Long> player2Deck, int step, int depth, Long p1Value, Long p2Value) {
+    private void playerTwoWon(LinkedList<Integer> player2Deck, int step, int depth, Integer p1Value, Integer p2Value) {
 //        log.info("Step {} depth {} - {} vs {} second won", step, depth, p1Value, p2Value);
         player2Deck.add(p2Value);
         player2Deck.add(p1Value);
     }
 
-    private void playerOneWon(LinkedList<Long> player1Deck, int step, int depth, Long p1Value, Long p2Value) {
+    private void playerOneWon(LinkedList<Integer> player1Deck, int step, int depth, Integer p1Value, Integer p2Value) {
 //        log.info("Step {} depth {} - {} vs {} first won", step, depth, p1Value, p2Value);
         player1Deck.add(p1Value);
         player1Deck.add(p2Value);
     }
 
-    private void playerOneWonTheGame(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck, int step, int depth) {
-        log.info("Step {} depth {} - {} vs {} first won the game", step, depth);
+    private void playerOneWonTheGame(LinkedList<Integer> player1Deck, LinkedList<Integer> player2Deck, int step, int depth) {
+        log.info("Step {} depth {} - first won the game", step, depth);
 
         player1Deck.addAll(player2Deck);
         player2Deck.clear();
     }
 
-    private long computeResultValue(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck) {
+    private long computeResultValue(LinkedList<Integer> player1Deck, LinkedList<Integer> player2Deck) {
         long result = 0;
 
         player1Deck.addAll(player2Deck);
-        int i = player1Deck.size();
-        for (Long number : player1Deck) {
+        long i = player1Deck.size();
+        for (Integer number : player1Deck) {
             result += i * number;
             i--;
         }
@@ -89,9 +89,9 @@ public class Day22 extends Day {
         return result;
     }
 
-    private LinkedList<Long> parsePlayerDeck(String s) {
-        LinkedList<Long> playerOneDeck = new LinkedList<>();
-        Arrays.stream(s.split("\n")).skip(1).map(Long::parseLong).forEach(playerOneDeck::add);
+    private LinkedList<Integer> parsePlayerDeck(String s) {
+        LinkedList<Integer> playerOneDeck = new LinkedList<>();
+        Arrays.stream(s.split("\n")).skip(1).map(Integer::parseInt).forEach(playerOneDeck::add);
         return playerOneDeck;
     }
 
@@ -100,8 +100,8 @@ public class Day22 extends Day {
 
         String[] input = data.split("\n\n");
 
-        final LinkedList<Long> player1Deck = parsePlayerDeck(input[0]);
-        final LinkedList<Long> player2Deck = parsePlayerDeck(input[1]);
+        final LinkedList<Integer> player1Deck = parsePlayerDeck(input[0]);
+        final LinkedList<Integer> player2Deck = parsePlayerDeck(input[1]);
 
         KnownConfigurationChecker checker = new KnownConfigurationChecker();
 
@@ -110,8 +110,8 @@ public class Day22 extends Day {
         return computeResultValue(player1Deck, player2Deck);
     }
 
-    private boolean playRecursiveOneGame(LinkedList<Long> player1Deck,
-                                      LinkedList<Long> player2Deck,
+    private boolean playRecursiveOneGame(LinkedList<Integer> player1Deck,
+                                      LinkedList<Integer> player2Deck,
                                       KnownConfigurationChecker checker,
                                       int depth) {
         int step = 0;
@@ -133,21 +133,21 @@ public class Day22 extends Day {
      * @param depth
      * @return
      */
-    private boolean playRecursively(LinkedList<Long> player1Deck, LinkedList<Long> player2Deck, KnownConfigurationChecker checker, int step, int depth) {
+    private boolean playRecursively(LinkedList<Integer> player1Deck, LinkedList<Integer> player2Deck, KnownConfigurationChecker checker, int step, int depth) {
 
         if (checker.testKnown(player1Deck, player2Deck)) {
             playerOneWonTheGame(player1Deck, player2Deck, step, depth);
             return true;
         }
 
-        Long p1Value = player1Deck.pollFirst();
-        Long p2Value = player2Deck.pollFirst();
+        Integer p1Value = player1Deck.pollFirst();
+        Integer p2Value = player2Deck.pollFirst();
 
         if (p1Value <= player1Deck.size() && p2Value <= player2Deck.size()) {
 
             boolean player1Wins = playRecursiveOneGame(
-                    new LinkedList<>(player1Deck),
-                    new LinkedList<>(player2Deck),
+                    new LinkedList<>(player1Deck.subList(0, p1Value)),
+                    new LinkedList<>(player2Deck.subList(0, p2Value)),
                     new KnownConfigurationChecker(),
                     depth + 1);
 
@@ -174,10 +174,10 @@ public class Day22 extends Day {
     @NoArgsConstructor
     private static class KnownConfigurationChecker {
 
-        private final Set<List<Long>> player1Known = new HashSet<>();
-        private final Set<List<Long>> player2Known = new HashSet<>();
+        private final Set<List<Integer>> player1Known = new HashSet<>();
+        private final Set<List<Integer>> player2Known = new HashSet<>();
 
-        public boolean testKnown(List<Long> player1Deck, List<Long> player2Deck) {
+        public boolean testKnown(List<Integer> player1Deck, List<Integer> player2Deck) {
 
             final boolean result = player1Known.contains(player1Deck) && player2Known.contains(player2Deck);
 
