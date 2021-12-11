@@ -1,10 +1,9 @@
 package cz.princu.adventofcode.year21.days;
 
 import cz.princu.adventofcode.common.Day;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import cz.princu.adventofcode.common.utils.ArrayIndexChecker;
+import cz.princu.adventofcode.common.utils.Coords;
+import cz.princu.adventofcode.common.utils.DataArrayUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -26,10 +25,10 @@ public class Day09 extends Day {
 
         String[] input = data.split("\n");
 
-        int[][] dataArray = getDataArray(input);
+        int[][] dataArray = DataArrayUtils.parseDataArray(input);
 
         var lowPoints = findLowPoints(dataArray);
-        return lowPoints.stream().mapToLong(it -> dataArray[it.i][it.j] + 1).sum();
+        return lowPoints.stream().mapToLong(it -> dataArray[it.getI()][it.getJ()] + 1).sum();
 
     }
 
@@ -38,7 +37,7 @@ public class Day09 extends Day {
 
         String[] input = data.split("\n");
 
-        int[][] dataArray = getDataArray(input);
+        int[][] dataArray = DataArrayUtils.parseDataArray(input);
 
         var lowPoints = findLowPoints(dataArray);
 
@@ -59,17 +58,6 @@ public class Day09 extends Day {
         return result;
     }
 
-
-    private int[][] getDataArray(String[] input) {
-        int[][] dataArray = new int[input.length][input[0].length()];
-        for (int i = 0; i < input.length; i++) {
-            var split = input[i].split("");
-            for (int j = 0; j < split.length; j++) {
-                dataArray[i][j] = Integer.parseInt(split[j]);
-            }
-        }
-        return dataArray;
-    }
 
     private List<Coords> findLowPoints(int[][] dataArray) {
 
@@ -126,7 +114,7 @@ public class Day09 extends Day {
             return;
         }
 
-        if (dataArray[lowest.i][lowest.j] >= 9) {
+        if (dataArray[lowest.getI()][lowest.getJ()] >= 9) {
             return;
         }
 
@@ -136,45 +124,6 @@ public class Day09 extends Day {
         findBasinPoints(checker, dataArray, basinElements, lowest.plus(-1, 0));
         findBasinPoints(checker, dataArray, basinElements, lowest.plus(0, 1));
         findBasinPoints(checker, dataArray, basinElements, lowest.plus(0, -1));
-
-    }
-
-    @AllArgsConstructor
-    static class ArrayIndexChecker {
-
-        private final int maxI;
-        private final int maxJ;
-
-        boolean isOutOfBounds(int i, int j) {
-            if (i < 0)
-                return true;
-
-            if (j < 0)
-                return true;
-
-            if (i >= maxI)
-                return true;
-
-            return j >= maxJ;
-        }
-
-        boolean isOutOfBounds(Coords coords) {
-            return isOutOfBounds(coords.i, coords.j);
-        }
-    }
-
-    @AllArgsConstructor
-    @Getter
-    @ToString
-    @EqualsAndHashCode
-    private static class Coords {
-
-        final int i;
-        final int j;
-
-        public Coords plus(int i, int j) {
-            return new Coords(this.i + i, this.j + j);
-        }
 
     }
 
