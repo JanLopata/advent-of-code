@@ -18,6 +18,11 @@ class Day05Test {
             "0,0 -> 8,8\n" +
             "5,5 -> 8,2";
 
+    String smallData = "8,0 -> 0,8\n" +
+            "6,4 -> 2,0\n" +
+            "0,0 -> 8,8\n" +
+            "5,5 -> 8,2";
+
     @Test
     void testPart1_simpleData() {
 
@@ -28,13 +33,6 @@ class Day05Test {
 
     @Test
     void testPart2_one_simpleData() {
-//
-//        var testData =
-//
-//                "8,0 -> 0,8\n" +
-//                "6,4 -> 2,0\n" +
-//                "0,0 -> 8,8\n" +
-//                "5,5 -> 8,2";
 
         Assertions.assertEquals(12L, tested.part2(testData));
 

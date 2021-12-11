@@ -24,27 +24,39 @@ public class Day05 extends Day {
 
         String[] input = data.split("\n");
 
+        return solveVulcanos(input, false);
+    }
+
+    @Override
+    public Object part2(String data) {
+
+        String[] input = data.split("\n");
+
+        return solveVulcanos(input, true);
+    }
+
+    private Long solveVulcanos(String[] input, boolean diagonalsAllowed) {
         var lines = Arrays.stream(input).map(Line::parseLine).collect(Collectors.toList());
 
         Map<Pair<Integer, Integer>, Integer> vulcanosGrid = new HashMap<>();
 
         for (Line line : lines) {
-            var drawn = line.drawLine(vulcanosGrid);
+            var drawn = line.drawLine(vulcanosGrid, diagonalsAllowed);
             if (drawn) {
-                log.info(line.toString());
-//                drawMap(vulcanosGrid);
+                log.debug(line.toString());
+                drawMap(vulcanosGrid);
             }
         }
 
-//        drawMap(vulcanosGrid);
+        drawMap(vulcanosGrid);
 
 
-        return (long) vulcanosGrid.values().stream().filter(it -> it >= 2).count();
+        return vulcanosGrid.values().stream().filter(it -> it >= 2).count();
     }
 
     private void drawMap(Map<Pair<Integer, Integer>, Integer> vulcanosGrid) {
 
-        int max = vulcanosGrid.entrySet().stream().map(Map.Entry::getKey)
+        int max = vulcanosGrid.keySet().stream()
                 .flatMap(it -> Stream.of(it.getLeft(), it.getRight()))
                 .mapToInt(it -> it)
                 .max().orElse(0) + 1;
@@ -63,32 +75,10 @@ public class Day05 extends Day {
             result.append("\n");
 
         }
-        log.info("\n" + result);
+        log.debug("\n" + result);
 
     }
 
-    @Override
-    public Object part2(String data) {
-
-        String[] input = data.split("\n");
-
-        var lines = Arrays.stream(input).map(Line::parseLine).collect(Collectors.toList());
-
-        Map<Pair<Integer, Integer>, Integer> vulcanosGrid = new HashMap<>();
-
-        for (Line line : lines) {
-            var drawn = line.drawLine(vulcanosGrid);
-            if (drawn) {
-                log.info(line.toString());
-//                drawMap(vulcanosGrid);
-            }
-        }
-
-//        drawMap(vulcanosGrid);
-
-
-        return (long) vulcanosGrid.values().stream().filter(it -> it >= 2).count();
-    }
 
     @RequiredArgsConstructor
     @ToString
@@ -111,7 +101,7 @@ public class Day05 extends Day {
             );
         }
 
-        public boolean drawLine(Map<Pair<Integer, Integer>, Integer> map) {
+        public boolean drawLine(Map<Pair<Integer, Integer>, Integer> map, boolean diagonalsAllowed) {
 
             int minX = Math.min(x1, x2);
             int maxX = Math.max(x1, x2);
@@ -123,41 +113,42 @@ public class Day05 extends Day {
 
             if (diffY * diffX != 0) {
 
+                if (!diagonalsAllowed)
+                    return false;
+
                 int dx = maxX - minX;
-                int dy = maxY - minY;
 
                 if (diffX * diffY > 0) {
-
                     for (int i = 0; i <= dx; i++) {
                         addToMap(minX + i, minY + i, map);
                     }
-                    return true;
-
-                }
-
-                if (diffX * diffY < 0) {
+                } else {
                     for (int i = 0; i <= dx; i++) {
                         addToMap(minX + i, maxY - i, map);
                     }
-                    return true;
-
                 }
 
+                return true;
             }
 
             if (diffX != 0) {
-
-                for (int i = minX; i <= maxX; i++) {
-                    addToMap(i, y1, map);
-                }
+                drawHorizontal(map, minX, maxX);
             } else {
-                for (int i = minY; i <= maxY; i++) {
-                    addToMap(x1, i, map);
-                }
+                drawVertical(map, minY, maxY);
             }
-
-
             return true;
+        }
+
+        private void drawVertical(Map<Pair<Integer, Integer>, Integer> map, int minY, int maxY) {
+            for (int i = minY; i <= maxY; i++) {
+                addToMap(x1, i, map);
+            }
+        }
+
+        private void drawHorizontal(Map<Pair<Integer, Integer>, Integer> map, int minX, int maxX) {
+            for (int i = minX; i <= maxX; i++) {
+                addToMap(i, y1, map);
+            }
         }
 
         private void addToMap(int i, int j, Map<Pair<Integer, Integer>, Integer> map) {
@@ -172,7 +163,6 @@ public class Day05 extends Day {
             }
 
         }
-
 
     }
 
