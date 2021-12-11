@@ -20,7 +20,7 @@ class Day09Test {
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         Assertions.assertEquals(1134L, tested.part2(testData));
 

@@ -22,7 +22,7 @@ class Day02Test {
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         String testData = "forward 5\n" +
                 "down 5\n" +

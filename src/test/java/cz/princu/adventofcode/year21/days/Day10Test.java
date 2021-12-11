@@ -27,21 +27,27 @@ class Day10Test {
 
     }
 
+    @Test
+    void testPart1_smallData() {
+
+        assertEquals((long) 3 + 57 + 1197 + 25137, tested.part1(smallData));
+
+    }
 
     @Test
     void testPart1_lineScore() {
 
-//        assertEquals(57L, tested.getLineScore("(]"));
-//        assertEquals(25137L, tested.getLineScore("{()()()>"));
-//        assertEquals(1197L, tested.getLineScore("(((()))}"));
-//        assertEquals(3L, tested.getLineScore("<([]){()}[{}])"));
+        assertEquals(57L, tested.getLineScoreIfCorrupted("(]"));
+        assertEquals(25137L, tested.getLineScoreIfCorrupted("{()()()>"));
+        assertEquals(1197L, tested.getLineScoreIfCorrupted("(((()))}"));
+        assertEquals(3L, tested.getLineScoreIfCorrupted("<([]){()}[{}])"));
 
         assertEquals(1197L, tested.getLineScoreIfCorrupted("{([(<{}[<>[]}>{[]{[(<()>"));
 
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         assertEquals(288957L, tested.part2(testData));
 

@@ -28,7 +28,7 @@ class Day03Test {
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         String testData = "00100\n" +
                 "11110\n" +

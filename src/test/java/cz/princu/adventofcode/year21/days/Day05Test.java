@@ -32,7 +32,7 @@ class Day05Test {
     }
 
     @Test
-    void testPart2_one_simpleData() {
+    void testPart2_simpleData() {
 
         Assertions.assertEquals(12L, tested.part2(testData));
 
