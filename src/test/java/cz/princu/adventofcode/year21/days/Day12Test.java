@@ -35,9 +35,24 @@ class Day12Test {
     }
 
     @Test
+    void testPart1_advancedData() {
+
+        assertEquals(19L, tested.part1(advancedData));
+
+    }
+
+    @Test
     void testPart2_simpleData() {
 
         assertEquals(36L, tested.part2(smallData));
+
+    }
+
+
+    @Test
+    void testPart2_advancedData() {
+
+        assertEquals(103L, tested.part2(advancedData));
 
     }
 
