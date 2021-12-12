@@ -56,6 +56,9 @@ public class Day05 extends Day {
 
     private void drawMap(Map<Pair<Integer, Integer>, Integer> vulcanosGrid) {
 
+        if (!log.isDebugEnabled())
+            return;
+
         int max = vulcanosGrid.keySet().stream()
                 .flatMap(it -> Stream.of(it.getLeft(), it.getRight()))
                 .mapToInt(it -> it)
