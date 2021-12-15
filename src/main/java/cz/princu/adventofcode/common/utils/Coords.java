@@ -18,4 +18,8 @@ public class Coords {
         return new Coords(this.i + i, this.j + j);
     }
 
+    public Coords plus(Coords another) {
+        return new Coords(this.i + another.i, this.j + another.j);
+    }
+
 }
