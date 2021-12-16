@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -24,12 +25,13 @@ public class Day16 extends Day {
             binary = "0" + binary;
         }
 
-        Packet packet = new Packet();
-        packet.globalStart = 0;
-        packet.globalEnd = binary.length();
-        packet.depth = 0;
-        parsePacket(binary, packet);
+        AtomicInteger globalIndex = new AtomicInteger();
+        List<Packet> stack = new ArrayList<>();
 
+        Packet packet = new Packet();
+        packet.depth = 0;
+        stack.add(packet);
+        parsePacket(binary, packet, globalIndex, stack);
 
         return sumPacketVersions(packet, new AtomicLong(0));
     }
@@ -42,110 +44,90 @@ public class Day16 extends Day {
         return 0L;
     }
 
-    int parsePacket(String binary, Packet currentPacket) {
+    void parsePacket(String binary, Packet currentPacket, AtomicInteger globalIndex, List<Packet> stack) {
 
-        var versionS = binary.substring(0, 3);
-        var typeS = binary.substring(3, 6);
+        int start = globalIndex.get();
+
+        var versionS = binary.substring(start, start + 3);
+        var typeS = binary.substring(start + 3, start + 6);
 
         var version = new BigInteger(versionS, 2).intValue();
         var type = new BigInteger(typeS, 2).intValue();
 
-        currentPacket.binary = binary;
-//        currentPacket.end = packetEnd;
         currentPacket.version = version;
-        log.info("ver: {}", version);
         currentPacket.typeId = type;
 
         if (type == 4) {
-
-            parseNumber(binary, currentPacket);
-            log.info("parsing number, end at {}", currentPacket.end);
-            return currentPacket.end;
+            parseNumber(binary, currentPacket, globalIndex);
+            return;
         }
 
-        var lengthTypeC = binary.charAt(6);
-
+        var lengthTypeC = binary.charAt(start + 6);
         if (lengthTypeC == '0') {
-
-            return parseWithKnownLength(binary, currentPacket);
-
+            parseWithKnownLength(binary, currentPacket, globalIndex, stack);
         } else {
-            return parseWithKnownNumber(binary, currentPacket);
+            parseWithKnownNumber(binary, currentPacket, globalIndex, stack);
         }
 
     }
 
-    private int parseWithKnownNumber(String binary, Packet currentPacket) {
-        var pac = binary.substring(7, 7 + 11);
+    private void parseWithKnownNumber(String binary, Packet currentPacket, AtomicInteger globalIndex, List<Packet> stack) {
+
+        int start = globalIndex.get();
+
+        var pac = binary.substring(start + 7, start + 7 + 11);
         var subPacketsCount = new BigInteger(pac, 2).intValue();
 
-        int nextPacketStart = 7 + 11;
+        globalIndex.addAndGet(7 + 11);
 
         while (currentPacket.subPackets.size() < subPacketsCount) {
             log.info("parsing with known number, {}/{}", currentPacket.subPackets.size(), subPacketsCount);
 
-            var subPacketBinary = binary.substring(nextPacketStart);
-            Packet subPacket = initPacket(currentPacket, nextPacketStart);
-
+            Packet subPacket = initPacket(currentPacket);
             currentPacket.subPackets.add(subPacket);
-            var currentSubPacketLength = parsePacket(subPacketBinary, subPacket);
-            nextPacketStart += currentSubPacketLength;
+            stack.add(subPacket);
+            parsePacket(binary, subPacket, globalIndex, stack);
 
         }
-
-        return getMaxEnd(currentPacket);
     }
 
-    private int parseWithKnownLength(String binary, Packet currentPacket) {
-        var pac = binary.substring(7, 7 + 15);
+    private void parseWithKnownLength(String binary, Packet currentPacket, AtomicInteger globalIndex, List<Packet> stack) {
+        int start = globalIndex.get();
+
+        var pac = binary.substring(start + 7, start + 7 + 15);
         var subPacketsLength = new BigInteger(pac, 2).intValue();
 
-        int nextPacketStart = 7 + 15;
-        int allPacketsEnd = nextPacketStart + subPacketsLength;
+        int allPacketsEnd = globalIndex.addAndGet(7 + 15) + subPacketsLength;
 
-        while (nextPacketStart < allPacketsEnd) {
+        while (globalIndex.get() < allPacketsEnd) {
             log.info("parsing with known length, currently {}, end at {}", currentPacket.subPackets.size(), allPacketsEnd);
 
-            var subPacketBinary = binary.substring(nextPacketStart, allPacketsEnd);
-            Packet subPacket = initPacket(currentPacket, nextPacketStart);
-
+            Packet subPacket = initPacket(currentPacket);
             currentPacket.subPackets.add(subPacket);
-            var currentSubPacketLength = parsePacket(subPacketBinary, subPacket);
-            nextPacketStart += currentSubPacketLength;
+            stack.add(subPacket);
+            parsePacket(binary, subPacket, globalIndex, stack);
 
         }
-        return allPacketsEnd;
     }
 
-    private Packet initPacket(Packet currentPacket, int nextPacketStart) {
+    private Packet initPacket(Packet currentPacket) {
         var subPacket = new Packet();
         subPacket.parent = currentPacket;
-        subPacket.globalStart = nextPacketStart + currentPacket.globalStart;
         subPacket.depth = currentPacket.depth + 1;
-        log.info("packet start at {}", subPacket.globalStart);
         return subPacket;
     }
 
-    private void parseNumber(String binary, Packet currentPacket) {
-        var chars = binary.toCharArray();
-        int packetEnd = -1;
+    private void parseNumber(String binary, Packet currentPacket, AtomicInteger globalIndex) {
+
         StringBuilder numberBin = new StringBuilder();
-        for (int i = 6; i < chars.length; i += 5) {
-
-            numberBin.append(binary, i + 1, i + 5);
-            if (chars[i] == '0') {
-                packetEnd = i + 5;
+        globalIndex.addAndGet(6);
+        while (true) {
+            var start = globalIndex.getAndAdd(5);
+            numberBin.append(binary, start + 1, start + 5);
+            if (binary.charAt(start) == '0')
                 break;
-            }
         }
-
-//        String bin = binary.substring(7, packetEnd);
-//        var val = new BigInteger(numberBin.toString(), 2);
-//        val = null;
-
-//        currentPacket.binary = binary.substring(0, packetEnd);
-        currentPacket.end = packetEnd;
-        currentPacket.globalEnd = currentPacket.globalStart + packetEnd;
+        currentPacket.number = new BigInteger(numberBin.toString(), 2).longValue();
     }
 
     private Long sumPacketVersions(Packet currentPacket, AtomicLong accum) {
@@ -157,15 +139,6 @@ public class Day16 extends Day {
         }
 
         return accum.get();
-    }
-
-    private int getMaxEnd(Packet packet) {
-
-        if (packet.subPackets.isEmpty()) {
-            return packet.globalEnd;
-        } else {
-            return getMaxEnd(packet.subPackets.get(packet.subPackets.size() - 1));
-        }
     }
 
 
@@ -185,13 +158,8 @@ public class Day16 extends Day {
 
         int version;
         int typeId;
-        String binary;
-
-        int globalStart;
-        int globalEnd;
         int depth;
-
-        int end;
+        long number;
 
         List<Packet> subPackets = new ArrayList<>();
         Packet parent;
