@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
 @Slf4j
 public class Day16 extends Day {
@@ -20,10 +21,7 @@ public class Day16 extends Day {
     @Override
     public Object part1(String data) {
 
-        var binary = new BigInteger(data, 16).toString(2);
-        while (binary.length() % 4 != 0) {
-            binary = "0" + binary;
-        }
+        String binary = getBinaryData(data);
 
         AtomicInteger globalIndex = new AtomicInteger();
         List<Packet> stack = new ArrayList<>();
@@ -39,9 +37,32 @@ public class Day16 extends Day {
     @Override
     public Object part2(String data) {
 
-        String[] input = data.split("\n");
+        String binary = getBinaryData(data);
 
-        return 0L;
+        AtomicInteger globalIndex = new AtomicInteger();
+        List<Packet> stack = new ArrayList<>();
+
+        Packet packet = new Packet();
+        packet.depth = 0;
+        stack.add(packet);
+        parsePacket(binary, packet, globalIndex, stack);
+
+        return packet.getValue();
+    }
+
+    private String getBinaryData(String data) {
+
+        // TODO: solve damn zeros
+        var binary = new BigInteger(data, 16).toString(2);
+        while (binary.length() % 4 != 0) {
+            binary = "0" + binary;
+        }
+
+        if (data.startsWith("0")) {
+            binary = "0000" + binary;
+        }
+
+        return binary;
     }
 
     void parsePacket(String binary, Packet currentPacket, AtomicInteger globalIndex, List<Packet> stack) {
@@ -159,10 +180,30 @@ public class Day16 extends Day {
         int version;
         int typeId;
         int depth;
-        long number;
+        long number = -1;
 
         List<Packet> subPackets = new ArrayList<>();
         Packet parent;
+
+        Long getValue() {
+            return switch (typeId) {
+                case 4 -> number;
+                case 0 -> subPackets.stream().mapToLong(Packet::getValue).sum();
+                case 1 -> subPackets.stream().mapToLong(Packet::getValue).reduce(1, (a, b) -> a * b);
+                case 2 -> subPackets.stream().mapToLong(Packet::getValue).min().orElse(-1);
+                case 3 -> subPackets.stream().mapToLong(Packet::getValue).max().orElse(-1);
+                case 5 -> compareDifference(subPackets, a -> a > 0);
+                case 6 -> compareDifference(subPackets, a -> a < 0);
+                case 7 -> compareDifference(subPackets, a -> a == 0);
+                default -> -1L;
+            };
+        }
+
+        private Long compareDifference(List<Packet> subPackets, LongPredicate predicate) {
+            var a = subPackets.get(0).getValue();
+            var b = subPackets.get(1).getValue();
+            return predicate.test(a - b) ? 1L : 0L;
+        }
 
     }
 }
