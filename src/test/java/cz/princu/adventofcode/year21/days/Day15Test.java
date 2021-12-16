@@ -29,7 +29,7 @@ class Day15Test {
     @Test
     void testPart2_simpleData() {
 
-        Assertions.assertEquals(2188189693529L, tested.part2(testData));
+        Assertions.assertEquals(315L, tested.part2(testData));
 
     }
 

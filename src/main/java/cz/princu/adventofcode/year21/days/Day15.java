@@ -76,8 +76,50 @@ public class Day15 extends Day {
     public Object part2(String data) {
 
         String[] input = data.split("\n");
+        var small = DataArrayUtils.parseDataArray(input);
+        var enterRisk = enlarge(small);
 
-        return 0L;
+        var start = new Coords(0, 0);
+        var end = new Coords(enterRisk.length - 1, enterRisk[0].length - 1);
+
+        ArrayIndexChecker checker = new ArrayIndexChecker(enterRisk.length, enterRisk[0].length);
+
+        var graph = buildGraph(enterRisk, checker);
+
+        var dijkstraShortestPath = new DijkstraShortestPath<Coords, DefaultEdge>(graph);
+        var path = dijkstraShortestPath.getPath(start, end);
+
+        return (long) path.getWeight();
+    }
+
+    private int[][] enlarge(int[][] small) {
+
+        var ratio = 5;
+        int[][] result = new int[small.length * ratio][];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = new int[small[0].length * ratio];
+        }
+
+        for (int i = 0; i < ratio; i++) {
+            for (int j = 0; j < ratio; j++) {
+                copyPlusWrap(result, small, i, j);
+            }
+        }
+        return result;
+    }
+
+    private void copyPlusWrap(int[][] result, int[][] small, int moveI, int moveJ) {
+
+        for (int i = 0; i < small.length; i++) {
+            for (int j = 0; j < small[i].length; j++) {
+
+                var value = small[i][j] + moveI + moveJ;
+                value = value - 9 * (value > 9 ? 1 : 0);
+
+                result[i + moveI * small.length][j + moveJ * small[0].length] = value;
+            }
+        }
+
     }
 
 
