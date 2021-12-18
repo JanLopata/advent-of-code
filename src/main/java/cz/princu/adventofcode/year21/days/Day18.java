@@ -1,11 +1,14 @@
 package cz.princu.adventofcode.year21.days;
 
 import cz.princu.adventofcode.common.Day;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -22,19 +25,31 @@ public class Day18 extends Day {
 
         String[] input = data.split("\n");
 
-        for (String s : input) {
-            Term term = new Term();
-            parseTerm(s, term, new AtomicInteger(), true);
-            log.info("s: {} term: {}", s, term);
+        Term term = new Term();
+        parseTerm(input[0], term, new AtomicInteger());
+
+        for (int i = 1; i < input.length; i++) {
+
+            Term nextTerm = new Term();
+            parseTerm(input[i], nextTerm, new AtomicInteger());
+
         }
 
         return 0L;
     }
 
-    private void parseTerm(String data, Term term, AtomicInteger globalIndex, boolean left) {
+    @Override
+    public Object part2(String data) {
+
+        String[] input = data.split("\n");
+
+        return 0L;
+    }
+
+    public void parseTerm(String data, Term term, AtomicInteger globalIndex) {
 
         var s = data.substring(globalIndex.get());
-        log.info("parsing: '{}'", s);
+        log.debug("parsing: '{}'", s);
         if (s.startsWith("[")) {
             // start term
 
@@ -42,7 +57,7 @@ public class Day18 extends Day {
                 var subterm = new Term();
                 subterm.parent = term;
                 globalIndex.incrementAndGet();
-                parseTerm(data, subterm, globalIndex, true);
+                parseTerm(data, subterm, globalIndex);
 
                 term.left = subterm;
             }
@@ -54,7 +69,7 @@ public class Day18 extends Day {
                 var subterm = new Term();
                 subterm.parent = term;
                 globalIndex.incrementAndGet();
-                parseTerm(data, subterm, globalIndex, false);
+                parseTerm(data, subterm, globalIndex);
 
                 term.right = subterm;
             }
@@ -71,25 +86,46 @@ public class Day18 extends Day {
         var matcher = NUMBER_PATTERN.matcher(s);
         if (matcher.find()) {
             var group = matcher.group();
-            var value = Integer.parseInt(group);
-            term.number = value;
+            term.number = Integer.parseInt(group);
             globalIndex.addAndGet(group.length());
         }
+    }
 
+    public static String representTerm(Term term) {
+
+        StringBuilder sb = new StringBuilder();
+        representTerm(term, sb);
+        log.info("{}", sb);
+        return sb.toString();
 
     }
 
-    @Override
-    public Object part2(String data) {
+    private static void representTerm(Term term, StringBuilder sb) {
 
-        String[] input = data.split("\n");
+        if (term == null) {
+            sb.append("null");
+            return;
+        }
 
-        return 0L;
+        if (term.number != null) {
+            sb.append(term.number);
+            return;
+        }
+
+        sb.append("[");
+        representTerm(term.left, sb);
+        sb.append(",");
+        representTerm(term.right, sb);
+        sb.append("]");
     }
 
-    @Data
-    @ToString(exclude = "parent", includeFieldNames = false)
+    @ToString(exclude = {"parent", "uuid"}, includeFieldNames = false)
+    @EqualsAndHashCode(of = "uuid")
+    @Getter
+    @Setter
     public static class Term {
+
+        String uuid = UUID.randomUUID().toString();
 
         private Integer number;
         private Term left;
@@ -99,7 +135,7 @@ public class Day18 extends Day {
 
 
         boolean shouldSplitThis() {
-            return number > 9;
+            return number != null && number > 9;
         }
 
         Term findOneToExplode(int depth) {
@@ -109,11 +145,25 @@ public class Day18 extends Day {
 
             if (left != null) {
                 var result = left.findOneToExplode(depth + 1);
-                if (result != null) return result;
+                if (result != null) {
+                    if (result.number != null) {
+                        return result.parent;
+                    } else {
+                        return result;
+                    }
+
+                }
             }
 
             if (right != null) {
-                return right.findOneToExplode(depth + 1);
+                var result = right.findOneToExplode(depth + 1);
+                if (result != null) {
+                    if (result.number != null) {
+                        return result.parent;
+                    } else {
+                        return result;
+                    }
+                }
             }
 
             return null;
@@ -146,13 +196,120 @@ public class Day18 extends Day {
             );
         }
 
+        public void explodeHere() {
 
+            var regularLeft = findRegularNumberLeft();
+            if (regularLeft != null) {
+                regularLeft.number += this.left.number;
+            }
+
+            var regularRight = findRegularNumberRight();
+            if (regularRight != null) {
+                regularRight.number += this.right.number;
+            }
+
+            left = null;
+            right = null;
+            number = 0;
+
+        }
+
+        public Term findRegularNumberLeft() {
+
+            if (this.parent == null)
+                return null;
+
+            if (this.parent.left.equals(this)) {
+                return this.parent.findRegularNumberLeft();
+            }
+
+            if (this.parent.right.equals(this)) {
+                return this.parent.left.findRegularNumberLeftDown();
+            }
+
+            return null;
+        }
+
+        public Term findRegularNumberRight() {
+
+            if (this.parent == null)
+                return null;
+
+            if (this.parent.right.equals(this)) {
+                return this.parent.findRegularNumberRight();
+            }
+
+            if (this.parent.left.equals(this)) {
+                return this.parent.right.findRegularNumberRightDown();
+            }
+
+            return null;
+        }
+
+        private Term findRegularNumberRightDown() {
+
+            if (left != null) {
+                return left.findRegularNumberRightDown();
+            }
+
+            return this;
+        }
+
+        private Term findRegularNumberLeftDown() {
+
+            if (right != null) {
+                return right.findRegularNumberLeftDown();
+            }
+
+            return this;
+        }
+
+        public void split() {
+
+            int x = number / 2, y = (number + 1) / 2;
+
+            number = null;
+            left = new Term();
+            left.parent = this;
+            left.number = x;
+            right = new Term();
+            right.parent = this;
+            right.number = y;
+
+        }
+
+        public void reduce() {
+
+            if (parent != null)
+                throw new IllegalStateException("must reduce a root only");
+
+            boolean reductionHappen = true;
+            while (reductionHappen) {
+
+                representTerm(this);
+
+                var toExplode = findOneToExplode(0);
+                if (toExplode != null) {
+                    toExplode.explodeHere();
+                    continue;
+                }
+
+                var toSplit = findOneToSplit();
+                if (toSplit != null) {
+                    toSplit.split();
+                    continue;
+                }
+
+                reductionHappen = false;
+            }
+
+        }
     }
 
 
     @Override
     public int getDayNumber() {
-        return -1;
+        return 18;
     }
 
     @Override
