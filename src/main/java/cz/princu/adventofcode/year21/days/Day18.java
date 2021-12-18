@@ -33,9 +33,10 @@ public class Day18 extends Day {
             Term nextTerm = new Term();
             parseTerm(input[i], nextTerm, new AtomicInteger());
 
+            term = term.add(nextTerm);
         }
 
-        return 0L;
+        return term.magnitude();
     }
 
     @Override
@@ -43,7 +44,33 @@ public class Day18 extends Day {
 
         String[] input = data.split("\n");
 
-        return 0L;
+        long maxMag = -1;
+
+        for (int i = 0; i < input.length; i++) {
+
+            for (int j = 0; j < input.length; j++) {
+
+                if (i == j)
+                    continue;
+
+                Term term = new Term();
+                parseTerm(input[i], term, new AtomicInteger());
+
+                Term nextTerm = new Term();
+                parseTerm(input[j], nextTerm, new AtomicInteger());
+
+                term = term.add(nextTerm);
+                long mag = term.magnitude();
+
+                if (mag > maxMag)
+                    maxMag = mag;
+
+            }
+
+        }
+
+
+        return maxMag;
     }
 
     public void parseTerm(String data, Term term, AtomicInteger globalIndex) {
@@ -136,6 +163,16 @@ public class Day18 extends Day {
 
         boolean shouldSplitThis() {
             return number != null && number > 9;
+        }
+
+        long magnitude() {
+
+            if (left == null)
+                return number;
+
+            return 3 * left.magnitude() + 2 * right.magnitude();
+
+
         }
 
         Term findOneToExplode(int depth) {
@@ -304,6 +341,25 @@ public class Day18 extends Day {
             }
 
         }
+
+        Term add(Term another) {
+
+            if (parent != null) {
+                throw new IllegalStateException("must sum a root only");
+            }
+
+            Term result = new Term();
+            result.left = this;
+            result.right = another;
+            this.parent = result;
+            another.parent = result;
+
+            result.reduce();
+
+            return result;
+        }
+
+
     }
 
 
