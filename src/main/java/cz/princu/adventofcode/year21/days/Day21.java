@@ -6,11 +6,11 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class Day21 extends Day {
@@ -19,10 +19,8 @@ public class Day21 extends Day {
     }
 
     private static final int FIELD_SIZE = 10;
-    private static final SituationFactory SITUATION_FACTORY = new SituationFactory(FIELD_SIZE);
     private static final int WINNING_SCORE = 21;
     private static final int SIDES = 3;
-    private static final int[] POLYNOM_COEFICIENTS = new int[]{0, 0, 0, 1, 3, 6, 7, 6, 3, 1};
 
     @Override
     public Object part1(String data) {
@@ -57,65 +55,70 @@ public class Day21 extends Day {
         playerPositions[0] = Integer.parseInt(input[0].split(": ")[1]) - 1;
         playerPositions[1] = Integer.parseInt(input[1].split(": ")[1]) - 1;
 
-        Map<Situation, Long> memory = new HashMap<>();
+        Map<OverallSituation, Pair<Long, Long>> memory = new HashMap<>();
 
-        memory.put(SITUATION_FACTORY.get(0, 0, playerPositions[0]), 1L);
-        memory.put(SITUATION_FACTORY.get(0, 1, playerPositions[1]), 1L);
+        var result = makeAGame(memory, new OverallSituation(
+                new Situation(0, playerPositions[0]),
+                new Situation(0, playerPositions[1]),
+                0));
 
-        countPossibleVariants(memory, SITUATION_FACTORY.get(6, 2, 1));
+        return result.getLeft() > result.getRight() ? result.getLeft() : result.getRight();
 
-        for (int position = 0; position < FIELD_SIZE; position++) {
-            for (int turn = 0; turn < WINNING_SCORE * 2; turn++) {
-                for (int score = WINNING_SCORE; score < WINNING_SCORE + FIELD_SIZE; score++) {
-                    countPossibleVariants(memory, SITUATION_FACTORY.get(score, turn, position));
-                }
-            }
-        }
-
-        var positive = memory.entrySet().stream()
-                .filter(it -> it.getValue() > 0)
-                .filter(it -> it.getKey().score >= WINNING_SCORE)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        long winCount = 0L;
-        for (int score = WINNING_SCORE; score < WINNING_SCORE + FIELD_SIZE; score++) {
-            for (int turn = 0; turn < WINNING_SCORE; turn += 2) {
-                for (int endingPosition = 0; endingPosition < FIELD_SIZE; endingPosition++) {
-
-                    winCount += memory.getOrDefault(SITUATION_FACTORY.get(score, turn, endingPosition), 0L);
-                    winCount -= memory.getOrDefault(SITUATION_FACTORY.get(score, turn - 1, endingPosition), 0L);
-
-                }
-            }
-        }
-
-
-        return winCount;
     }
 
-    private long countPossibleVariants(Map<Situation, Long> memory, Situation s) {
+    private Pair<Long, Long> makeAGame(Map<OverallSituation, Pair<Long, Long>> memory, OverallSituation overallSituation) {
 
-        if (s.illegal)
-            return 0L;
-        if (memory.containsKey(s))
-            return memory.get(s);
+        if (memory.containsKey(overallSituation))
+            return memory.get(overallSituation);
 
-        long possibleVariants = 0L;
-        var previousScore = previousScore(s);
-
-        for (int i = 1; i <= 3 * SIDES; i++) {
-            possibleVariants += POLYNOM_COEFICIENTS[i] * countPossibleVariants(
-                    memory, SITUATION_FACTORY.get(previousScore, s.turn - 2, s.position - i));
+        if (overallSituation.playerOne.score >= WINNING_SCORE) {
+            var firstWon = Pair.of(1L, 0L);
+            memory.put(overallSituation, firstWon);
+            return firstWon;
+        }
+        if (overallSituation.playerTwo.score >= WINNING_SCORE) {
+            var secondWon = Pair.of(0L, 1L);
+            memory.put(overallSituation, secondWon);
+            return secondWon;
         }
 
-        if (s.turn > 1) {
-            possibleVariants *= 9 * 9;
-        } else if (s.turn == 1) {
-            possibleVariants *= 9;
+        long playerOneWins = 0L;
+        long playerTwoWins = 0L;
+
+        for (int i = 1; i <= SIDES; i++) {
+            for (int j = 1; j <= SIDES; j++) {
+                for (int k = 1; k <= SIDES; k++) {
+
+                    int shift = i + j + k;
+                    if (overallSituation.playerOnTurn == 0) {
+
+                        var newPos = (overallSituation.playerOne.position + shift) % FIELD_SIZE;
+                        var newScore = overallSituation.playerOne.score + newPos + 1;
+                        var wonInfo = makeAGame(memory, new OverallSituation(
+                                new Situation(newScore, newPos),
+                                overallSituation.playerTwo,
+                                1 - overallSituation.playerOnTurn));
+                        playerOneWins += wonInfo.getLeft();
+                        playerTwoWins += wonInfo.getRight();
+
+                    } else {
+
+                        var newPos = (overallSituation.playerTwo.position + shift) % FIELD_SIZE;
+                        var newScore = overallSituation.playerTwo.score + newPos + 1;
+                        var wonInfo = makeAGame(memory, new OverallSituation(
+                                overallSituation.playerOne,
+                                new Situation(newScore, newPos),
+                                1 - overallSituation.playerOnTurn));
+                        playerOneWins += wonInfo.getLeft();
+                        playerTwoWins += wonInfo.getRight();
+                    }
+                }
+            }
         }
 
-        memory.put(s, possibleVariants);
-        return possibleVariants;
+        var result = Pair.of(playerOneWins, playerTwoWins);
+        memory.put(overallSituation, result);
+        return result;
 
     }
 
@@ -132,33 +135,6 @@ public class Day21 extends Day {
 
     }
 
-    private static int previousScore(Situation situation) {
-        return previousScore(situation.score, situation.position);
-    }
-
-    private static int previousScore(int score, int position) {
-        return score - position - 1;
-    }
-
-    @RequiredArgsConstructor
-    private static class SituationFactory {
-
-        final int fieldSize;
-
-        public Situation get(int score, int turn, int position) {
-            boolean illegal = isIllegal(score, turn, position);
-            return new Situation(score, turn, (position + fieldSize) % fieldSize, illegal);
-        }
-
-        private boolean isIllegal(int score, int turn, int position) {
-            if (score < 0 || turn < 0 || (turn == 0 && score > 0))
-                return true;
-
-            return previousScore(score, position) >= WINNING_SCORE;
-        }
-
-    }
-
     @EqualsAndHashCode
     @RequiredArgsConstructor
     @ToString
@@ -166,11 +142,20 @@ public class Day21 extends Day {
     private static class Situation {
 
         final int score;
-        final int turn;
         final int position;
-        final boolean illegal;
 
     }
+
+    @RequiredArgsConstructor
+    @EqualsAndHashCode
+    private static class OverallSituation {
+
+        final Situation playerOne;
+        final Situation playerTwo;
+        final int playerOnTurn;
+
+    }
+
 
     private static class Dice {
 

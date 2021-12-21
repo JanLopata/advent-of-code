@@ -22,9 +22,8 @@ class Day21Test {
 
     @Test
     void testPart2_simpleData() {
-        final String minidata = "Player 1 starting position: 2\n" +
-                "Player 2 starting position: 4";
-        assertEquals(0L, tested.part2(minidata));
+
+        assertEquals(444356092776315L, tested.part2(testData));
 
     }
 
