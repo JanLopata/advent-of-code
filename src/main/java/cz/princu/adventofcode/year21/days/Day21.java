@@ -18,8 +18,10 @@ public class Day21 extends Day {
         new Day21().printParts();
     }
 
-    private static final SituationFactory SITUATION_FACTORY = new SituationFactory(4);
+    private static final int FIELD_SIZE = 4;
+    private static final SituationFactory SITUATION_FACTORY = new SituationFactory(FIELD_SIZE);
     private static final int WINNING_SCORE = 6;
+    private static final int[] POLYNOM_COEFICIENTS = new int[]{0, 1, 3, 3, 1};
 
     @Override
     public Object part1(String data) {
@@ -58,16 +60,11 @@ public class Day21 extends Day {
 
         memory.put(SITUATION_FACTORY.get(0, 0, playerPositions[0]), 1L);
 
-        final int fieldSize = 4;
-        final int maxScore = 8;
-//        var dynPlayerOne = initDyn(fieldSize, maxScore);
-
-//        initChances(playerPositions[0], fieldSize, maxScore, dynPlayerOne);
         countPossibleVariants(memory, SITUATION_FACTORY.get(6, 2, 1));
 
-        for (int position = 0; position < fieldSize; position++) {
+        for (int position = 0; position < FIELD_SIZE; position++) {
             for (int turn = 0; turn < WINNING_SCORE; turn++) {
-                for (int score = WINNING_SCORE; score < WINNING_SCORE + fieldSize; score++) {
+                for (int score = WINNING_SCORE; score < WINNING_SCORE + FIELD_SIZE; score++) {
                     countPossibleVariants(memory, SITUATION_FACTORY.get(score, turn, position));
                 }
             }
@@ -76,64 +73,24 @@ public class Day21 extends Day {
         return 0L;
     }
 
-    private void initChances(int playerPosition, int fieldSize, int maxScore, long[][][] dynPlayerOne) {
-        Arrays.fill(dynPlayerOne[0][0], 0);
-        dynPlayerOne[0][0][playerPosition] = 1;
-
-        for (int score = maxScore + 1; score < maxScore + fieldSize; score++) {
-
-            for (int tcount = 0; tcount < dynPlayerOne[score].length; tcount++) {
-
-                for (int pos = 0; pos < score - maxScore; pos++) {
-                    dynPlayerOne[score][tcount][pos] = 0;
-                }
-
-            }
-
-        }
-    }
-
     private long countPossibleVariants(Map<Situation, Long> memory, Situation s) {
 
-        if (s.illegal) {
+        if (s.illegal)
             return 0L;
-        }
-
-
-        if (memory.containsKey(s)) {
+        if (memory.containsKey(s))
             return memory.get(s);
-        }
 
         long possibleVariants = 0L;
-        var previousScore = s.score - s.position - 1;
-        possibleVariants += countPossibleVariants(memory,
-                SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - 1));
-        possibleVariants += 3 * countPossibleVariants(memory,
-                SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - 2));
-        possibleVariants += 3 * countPossibleVariants(memory,
-                SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - 3));
-        possibleVariants += countPossibleVariants(memory,
-                SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - 4));
+        var previousScore = previousScore(s);
+
+        for (int i = 1; i <= FIELD_SIZE; i++) {
+            possibleVariants += POLYNOM_COEFICIENTS[i] * countPossibleVariants(
+                    memory, SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - i));
+        }
 
         memory.put(s, possibleVariants);
         return possibleVariants;
 
-    }
-
-    private long[][][] initDyn(int fieldSize, int maxScore) {
-        // score, throws, position
-        long[][][] dyn = new long[fieldSize + maxScore][][];
-
-        for (int i = 0; i < dyn.length; i++) {
-
-            dyn[i] = new long[maxScore][];
-
-            for (int k = 0; k < dyn[i].length; k++) {
-                dyn[i][k] = new long[fieldSize];
-                Arrays.fill(dyn[i][k], -1);
-            }
-        }
-        return dyn;
     }
 
     private void playTurn(Dice dice, int[] playerPositions, long[] scores, int onTurn, int fieldSize) {
