@@ -8,9 +8,9 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Day21 extends Day {
@@ -18,10 +18,11 @@ public class Day21 extends Day {
         new Day21().printParts();
     }
 
-    private static final int FIELD_SIZE = 4;
+    private static final int FIELD_SIZE = 10;
     private static final SituationFactory SITUATION_FACTORY = new SituationFactory(FIELD_SIZE);
-    private static final int WINNING_SCORE = 6;
-    private static final int[] POLYNOM_COEFICIENTS = new int[]{0, 1, 3, 3, 1};
+    private static final int WINNING_SCORE = 21;
+    private static final int SIDES = 3;
+    private static final int[] POLYNOM_COEFICIENTS = new int[]{0, 0, 0, 1, 3, 6, 7, 6, 3, 1};
 
     @Override
     public Object part1(String data) {
@@ -59,18 +60,37 @@ public class Day21 extends Day {
         Map<Situation, Long> memory = new HashMap<>();
 
         memory.put(SITUATION_FACTORY.get(0, 0, playerPositions[0]), 1L);
+        memory.put(SITUATION_FACTORY.get(0, 1, playerPositions[1]), 1L);
 
         countPossibleVariants(memory, SITUATION_FACTORY.get(6, 2, 1));
 
         for (int position = 0; position < FIELD_SIZE; position++) {
-            for (int turn = 0; turn < WINNING_SCORE; turn++) {
+            for (int turn = 0; turn < WINNING_SCORE * 2; turn++) {
                 for (int score = WINNING_SCORE; score < WINNING_SCORE + FIELD_SIZE; score++) {
                     countPossibleVariants(memory, SITUATION_FACTORY.get(score, turn, position));
                 }
             }
         }
 
-        return 0L;
+        var positive = memory.entrySet().stream()
+                .filter(it -> it.getValue() > 0)
+                .filter(it -> it.getKey().score >= WINNING_SCORE)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        long winCount = 0L;
+        for (int score = WINNING_SCORE; score < WINNING_SCORE + FIELD_SIZE; score++) {
+            for (int turn = 0; turn < WINNING_SCORE; turn += 2) {
+                for (int endingPosition = 0; endingPosition < FIELD_SIZE; endingPosition++) {
+
+                    winCount += memory.getOrDefault(SITUATION_FACTORY.get(score, turn, endingPosition), 0L);
+                    winCount -= memory.getOrDefault(SITUATION_FACTORY.get(score, turn - 1, endingPosition), 0L);
+
+                }
+            }
+        }
+
+
+        return winCount;
     }
 
     private long countPossibleVariants(Map<Situation, Long> memory, Situation s) {
@@ -83,9 +103,15 @@ public class Day21 extends Day {
         long possibleVariants = 0L;
         var previousScore = previousScore(s);
 
-        for (int i = 1; i <= FIELD_SIZE; i++) {
+        for (int i = 1; i <= 3 * SIDES; i++) {
             possibleVariants += POLYNOM_COEFICIENTS[i] * countPossibleVariants(
-                    memory, SITUATION_FACTORY.get(previousScore, s.turn - 1, s.position - i));
+                    memory, SITUATION_FACTORY.get(previousScore, s.turn - 2, s.position - i));
+        }
+
+        if (s.turn > 1) {
+            possibleVariants *= 9 * 9;
+        } else if (s.turn == 1) {
+            possibleVariants *= 9;
         }
 
         memory.put(s, possibleVariants);
