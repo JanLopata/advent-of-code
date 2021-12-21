@@ -14,52 +14,89 @@ public class Day20 extends Day {
         new Day20().printParts();
     }
 
+    private static final int BORDER_SIZE = 6;
+
     @Override
     public Object part1(String data) {
 
         String[] input = data.split("\n\n");
         String enhancement = input[0];
 
-        boolean flipin = enhancement.startsWith("#");
-        boolean universeLit = false;
-
         var imageLines = input[1].split("\n");
 
-        Set<Coords> map = new HashSet<>();
+        boolean[][] map = initEmpty(imageLines.length + 2 * BORDER_SIZE, imageLines[0].length() + 2 * BORDER_SIZE);
+
         for (int i = 0; i < imageLines.length; i++) {
             var chars = imageLines[i].toCharArray();
             for (int j = 0; j < chars.length; j++) {
-                if (chars[j] == '#') {
-                    map.add(new Coords(i, j));
-                }
+//                map[i + BORDER_SIZE][j + BORDER_SIZE] = chars[j] == '#';
             }
         }
         printMap(map);
 
-        for (int i = 0; i < 2; i++) {
-            Set<Coords> enhanced = doEnhancement(enhancement, map, universeLit);
+        int stepsCount = 2;
+        for (int i = 0; i < stepsCount; i++) {
+            var enhanced = doEnhancement(enhancement, map);
             printMap(enhanced);
-            universeLit = flipin && !universeLit;
-            map = new HashSet<>(enhanced);
+            map = enhanced;
         }
 
-
-        return (long) map.size();
+        return countLit(map, stepsCount + 1);
     }
 
-    private void printMap(Set<Coords> map) {
+    private boolean[][] initEmpty(int x, int y) {
+        boolean[][] map = new boolean[x][];
+        for (int i = 0; i < x; i++) {
+            map[i] = new boolean[y];
+        }
+        return map;
+    }
+
+    private long countLit(boolean[][] map, int stepsCount) {
+        long result = 0L;
+
+        for (int i = stepsCount; i < map.length - stepsCount; i++) {
+            for (int j = stepsCount; j < map[i].length - stepsCount; j++) {
+                if (map[i][j])
+                    result++;
+            }
+        }
+
+        return result;
+    }
+
+    private boolean[][] doEnhancement(String enhancement, boolean[][] map) {
+        boolean[][] enhancedMap = initEmpty(map.length, map[0].length);
+
+        for (int i = 1; i < enhancedMap.length - 1; i++) {
+            for (int j = 1; j < enhancedMap[i].length - 1; j++) {
+                int surrounding = surroundingToNumber(map, i, j);
+                enhancedMap[i][j] = enhancement.charAt(surrounding) == '#';
+            }
+        }
+
+        return enhancedMap;
+    }
+
+    private int surroundingToNumber(boolean[][] map, int x, int y) {
+        int result = 0;
+        int magnitude = 256;
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                result += (map[x + i][y + j] ? 1 : 0) * magnitude;
+                magnitude /= 2;
+            }
+        }
+        return result;
+    }
+
+    private void printMap(boolean[][] map) {
 
         StringBuilder sb = new StringBuilder();
-        var minX = map.stream().mapToInt(Coords::getI).min().orElse(-1);
-        var maxX = map.stream().mapToInt(Coords::getI).max().orElse(-1);
-        var minY = map.stream().mapToInt(Coords::getJ).min().orElse(-1);
-        var maxY = map.stream().mapToInt(Coords::getJ).max().orElse(-1);
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-
-                sb.append(map.contains(new Coords(x, y)) ? "#" : '.');
-
+        for (boolean[] booleans : map) {
+            for (boolean aBoolean : booleans) {
+                sb.append(aBoolean ? "#" : ".");
             }
             sb.append("\n");
         }
@@ -75,12 +112,12 @@ public class Day20 extends Day {
 
         if (universeLit) {
             for (int i = minX - 1; i <= maxX + 1; i++) {
-               map.add(new Coords(i, minY - 1));
-               map.add(new Coords(i, maxY + 1));
+                map.add(new Coords(i, minY - 1));
+                map.add(new Coords(i, maxY + 1));
             }
-            for (int i = minY-1; i <= maxY+1; i++) {
-                map.add(new Coords(minX-1, i));
-                map.add(new Coords(maxX+1, i));
+            for (int i = minY - 1; i <= maxY + 1; i++) {
+                map.add(new Coords(minX - 1, i));
+                map.add(new Coords(maxX + 1, i));
             }
         }
 
