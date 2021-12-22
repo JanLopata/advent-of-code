@@ -8,7 +8,7 @@ import lombok.ToString;
 @RequiredArgsConstructor
 @EqualsAndHashCode
 @Getter
-@ToString
+@ToString(includeFieldNames = false)
 public class Coord3 {
 
     private final int x;
