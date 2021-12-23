@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,13 +52,6 @@ public class Day23 extends Day {
     @Override
     public Object part1(String data) {
 
-//        data = data.replace('A', '1')
-//                .replace('B', '2')
-//                .replace('C', '3')
-//                .replace('D', '4')
-//                .replace(' ', '0')
-//                .replace('.', '8')
-//                .replace('#', '9');
         String[] input = data.split("\n");
 
         char[][] charArray = convertInputToChars(input);
@@ -70,36 +64,62 @@ public class Day23 extends Day {
         for (int column = 0; column < charArray.length; column++) {
             for (int row = 0; row < charArray[column].length; row++) {
                 var c = charArray[column][row];
-                Coords coords = new Coords(column, row);
                 if (Character.isUpperCase(c)) {
+                    Coords coords = new Coords(column, row);
                     var position = findTargetFromCoordinates(targets).apply(coords).findAny().orElseThrow();
+                    var isHome = row == BOTTOM_HOME_LEVEL
+                            && position.isAllowed(c);
                     var amphipod = Amphipod.builder()
-                            .isHome(row == BOTTOM_HOME_LEVEL
-                                    && position.isAllowed(c))
-                            .moveHome(true)
-                            .moveToHall(true)
+                            .id(UUID.randomUUID().toString())
+                            .isHome(isHome)
+                            .moveHome(!isHome)
+                            .moveToHall(!isHome)
                             .type(c)
                             .movementCost(MOVEMENT_COST_MAP.get(c))
                             .build();
-                    situation.put(amphipod, position);
+                    var put = situation.put(amphipod, position);
+                    if (put != null) {
+                        log.error("overwrite at {} - {}", amphipod, position);
+                        throw new IllegalStateException();
+                    }
                 }
             }
         }
 
-        solve(memory, situation, 0L, optionsFromStart);
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Amphipod, Target> entry : situation.entrySet()) {
+            sb.append(entry.getKey());
+            sb.append("\n");
+            sb.append(entry.getValue());
+            sb.append("\n\n");
+        }
+        log.info("Start: \n{}", sb);
 
-        HashMap<String, Long> score = new HashMap<>();
-        score.put(data, 0L);
+        AtomicLong globalMin = new AtomicLong(Long.MAX_VALUE);
+        solve(globalMin, memory, situation, 0L, optionsFromStart);
 
-
-        return 0L;
+        return globalMin.get();
     }
 
-    private void solve(Map<Map<Amphipod, Target>, Long> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
+    private void solve(AtomicLong globalMin, Map<Map<Amphipod, Target>, Long> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
 
-        log.info("price: {}", price);
+        if (memory.containsKey(situation)) {
+            log.debug("cache event");
+            if (memory.get(situation) > price) {
+                memory.put(situation, price);
+            }
+            return;
+        }
+
+        if (price > globalMin.get()) {
+            log.debug("price {} exceeded", globalMin.get());
+            return;
+        }
+
         if (isSolved(situation)) {
             log.info("solved with price {}", price);
+            if (price < globalMin.get())
+                globalMin.set(price);
             return;
         }
 
@@ -121,6 +141,7 @@ public class Day23 extends Day {
                 var newSituation = new HashMap<>(situation);
                 newSituation.remove(amphipod);
                 var newAmphipod = Amphipod.builder()
+                        .id(amphipod.id)
                         .isHome(targetToTarget.end.restrictedTo != null)
                         .movementCost(amphipod.movementCost)
                         .moveToHall(false)
@@ -130,11 +151,47 @@ public class Day23 extends Day {
                 newSituation.put(newAmphipod, targetToTarget.end);
 
                 var movePrice = amphipod.movementCost * targetToTarget.distance;
-                solve(memory, newSituation, price + movePrice, optionsFromStart);
+                solve(globalMin, memory, newSituation, price + movePrice, optionsFromStart);
 
             }
 
         }
+
+        var canMoveToHome = situation.keySet()
+                .stream()
+                .filter(it -> it.moveHome)
+                .collect(Collectors.toList());
+
+        for (Amphipod amphipod : canMoveToHome) {
+            var currentPosition = situation.get(amphipod);
+            for (TargetToTarget targetToTarget : optionsFromStart.get(currentPosition)) {
+
+                if (targetToTarget.end.isHallway)
+                    continue;
+
+                if (!targetToTarget.isPassable(situation, amphipod))
+                    continue;
+
+                var newSituation = new HashMap<>(situation);
+                newSituation.remove(amphipod);
+                var newAmphipod = Amphipod.builder()
+                        .id(amphipod.id)
+                        .isHome(targetToTarget.end.restrictedTo != null)
+                        .movementCost(amphipod.movementCost)
+                        .moveToHall(false)
+                        .moveHome(false)
+                        .type(amphipod.type)
+                        .build();
+                newSituation.put(newAmphipod, targetToTarget.end);
+
+                var movePrice = amphipod.movementCost * targetToTarget.distance;
+                solve(globalMin, memory, newSituation, price + movePrice, optionsFromStart);
+
+            }
+
+        }
+
+        memory.put(situation, price);
 
     }
 
@@ -159,7 +216,6 @@ public class Day23 extends Day {
                 var path = dijkstraShortestPath.getPath(start.coords, end.coords);
                 var pathCoordsBetween = path.getVertexList().stream()
                         .filter(it -> !it.equals(start.coords))
-                        .filter(it -> !it.equals(end.coords))
                         .flatMap(findTargetFromCoordinates(targets))
                         .collect(Collectors.toList());
 
@@ -287,11 +343,11 @@ public class Day23 extends Day {
 
 
     @EqualsAndHashCode
-    @ToString(of = "uuid")
+    @ToString
     @RequiredArgsConstructor
     @Builder
     private static class Amphipod {
-        final String uuid = UUID.randomUUID().toString();
+        final String id;
         final boolean moveToHall;
         final boolean moveHome;
         final int movementCost;
