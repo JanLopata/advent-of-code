@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -59,7 +61,7 @@ public class Day23 extends Day {
         List<Target> targets = findTargets(charArray);
         var optionsFromStart = findOptions(charArray, targets);
 
-        Map<Map<Amphipod, Target>, Long> memory = new HashMap<>();
+        Set<Map<Amphipod, Target>> memory = new HashSet<>();
         Map<Amphipod, Target> situation = new HashMap<>();
         for (int column = 0; column < charArray.length; column++) {
             for (int row = 0; row < charArray[column].length; row++) {
@@ -101,13 +103,9 @@ public class Day23 extends Day {
         return globalMin.get();
     }
 
-    private void solve(AtomicLong globalMin, Map<Map<Amphipod, Target>, Long> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
+    private void solve(AtomicLong globalMin, Set<Map<Amphipod, Target>> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
 
-        if (memory.containsKey(situation)) {
-            log.debug("cache event");
-            if (memory.get(situation) > price) {
-                memory.put(situation, price);
-            }
+        if (memory.contains(situation)) {
             return;
         }
 
@@ -191,7 +189,7 @@ public class Day23 extends Day {
 
         }
 
-        memory.put(situation, price);
+        memory.add(situation);
 
     }
 
