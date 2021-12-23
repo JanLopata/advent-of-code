@@ -15,12 +15,12 @@ import org.jgrapht.graph.SimpleGraph;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,15 +32,9 @@ public class Day23 extends Day {
         new Day23().printParts();
     }
 
-    private static final String TARGET = "#############\n" +
-            "#...........#\n" +
-            "###A#B#C#D###\n" +
-            "  #A#B#C#D#\n" +
-            "  #########";
+    private static final AtomicInteger GLOBAL_ID_PROVIDER = new AtomicInteger();
 
     private static final Map<Character, Integer> MOVEMENT_COST_MAP;
-
-    private static final int BOTTOM_HOME_LEVEL = 3;
 
     static {
         MOVEMENT_COST_MAP = new HashMap<>();
@@ -48,7 +42,6 @@ public class Day23 extends Day {
         MOVEMENT_COST_MAP.put('B', 10);
         MOVEMENT_COST_MAP.put('C', 100);
         MOVEMENT_COST_MAP.put('D', 1000);
-
     }
 
     @Override
@@ -56,12 +49,20 @@ public class Day23 extends Day {
 
         String[] input = data.split("\n");
 
-        char[][] charArray = convertInputToChars(input);
+        return findMinimalPrice(input);
+    }
 
-        List<Target> targets = findTargets(charArray);
-        var optionsFromStart = findOptions(charArray, targets);
+    @Override
+    public Object part2(String data) {
 
-        Set<Map<Amphipod, Target>> memory = new HashSet<>();
+        String[] originalInput = data.split("\n");
+        String[] input = insertTwoLines(originalInput);
+
+        return findMinimalPrice(input);
+    }
+
+    private Map<Amphipod, Target> initSituation(char[][] charArray, List<Target> targets) {
+        var bottomHomeLevel = charArray[0].length - 2;
         Map<Amphipod, Target> situation = new HashMap<>();
         for (int column = 0; column < charArray.length; column++) {
             for (int row = 0; row < charArray[column].length; row++) {
@@ -69,12 +70,11 @@ public class Day23 extends Day {
                 if (Character.isUpperCase(c)) {
                     Coords coords = new Coords(column, row);
                     var position = findTargetFromCoordinates(targets).apply(coords).findAny().orElseThrow();
-                    var isHome = row == BOTTOM_HOME_LEVEL
+                    var isHome = row == bottomHomeLevel
                             && position.isAllowed(c);
                     var amphipod = Amphipod.builder()
-                            .id(UUID.randomUUID().toString())
+                            .id(GLOBAL_ID_PROVIDER.incrementAndGet())
                             .isHome(isHome)
-                            .moveHome(!isHome)
                             .moveToHall(!isHome)
                             .type(c)
                             .movementCost(MOVEMENT_COST_MAP.get(c))
@@ -87,110 +87,61 @@ public class Day23 extends Day {
                 }
             }
         }
-
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<Amphipod, Target> entry : situation.entrySet()) {
-            sb.append(entry.getKey());
-            sb.append("\n");
-            sb.append(entry.getValue());
-            sb.append("\n\n");
-        }
-        log.info("Start: \n{}", sb);
-
-        AtomicLong globalMin = new AtomicLong(Long.MAX_VALUE);
-        solve(globalMin, memory, situation, 0L, optionsFromStart);
-
-        return globalMin.get();
+        return situation;
     }
 
-    private void solve(AtomicLong globalMin, Set<Map<Amphipod, Target>> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
+    private void solve(AtomicLong globalMin, LinkedList<ArchivedMove> moveStack, Map<Map<Amphipod, Target>, Long> memory, Map<Amphipod, Target> situation, long price, HashMap<Target, List<TargetToTarget>> optionsFromStart) {
 
-        if (memory.contains(situation)) {
+        var memoryRecord = memory.getOrDefault(situation, Long.MAX_VALUE);
+        if (memoryRecord <= price) {
             return;
+        } else {
+            memory.put(situation, price);
         }
 
-        if (price > globalMin.get()) {
+        if (price >= globalMin.get()) {
             log.debug("price {} exceeded", globalMin.get());
             return;
         }
 
         if (isSolved(situation)) {
-            log.info("solved with price {}", price);
+            log.info("solved with price {}\n{}", price, moveStack.stream()
+                    .map(ArchivedMove::toString)
+                    .collect(Collectors.joining("\n")));
             if (price < globalMin.get())
                 globalMin.set(price);
             return;
         }
 
-        var canMoveToHall = situation.keySet()
-                .stream()
-                .filter(it -> it.moveToHall)
-                .collect(Collectors.toList());
-
-        for (Amphipod amphipod : canMoveToHall) {
+        for (Amphipod amphipod : situation.keySet()) {
             var currentPosition = situation.get(amphipod);
-            for (TargetToTarget targetToTarget : optionsFromStart.get(currentPosition)) {
+            if (amphipod.isHome)
+                continue;
 
-                if (!targetToTarget.end.isHallway)
-                    continue;
+            var options = optionsFromStart.get(currentPosition);
+            for (TargetToTarget path : options) {
 
-                if (!targetToTarget.isPassable(situation, amphipod))
+                var target = path.end;
+                if ((target.isHallway && !amphipod.moveToHall) || (path.isImpassable(situation, amphipod)))
                     continue;
 
                 var newSituation = new HashMap<>(situation);
                 newSituation.remove(amphipod);
                 var newAmphipod = Amphipod.builder()
                         .id(amphipod.id)
-                        .isHome(targetToTarget.end.restrictedTo != null)
+                        .isHome(target.restrictedTo != null)
                         .movementCost(amphipod.movementCost)
                         .moveToHall(false)
-                        .moveHome(amphipod.moveHome)
                         .type(amphipod.type)
                         .build();
-                newSituation.put(newAmphipod, targetToTarget.end);
+                newSituation.put(newAmphipod, target);
 
-                var movePrice = amphipod.movementCost * targetToTarget.distance;
-                solve(globalMin, memory, newSituation, price + movePrice, optionsFromStart);
-
+                var movePrice = amphipod.movementCost * path.distance;
+                moveStack.add(new ArchivedMove(amphipod.id, amphipod.type, target.coords, path.distance, movePrice));
+                solve(globalMin, moveStack, memory, newSituation, price + movePrice, optionsFromStart);
+                moveStack.removeLast();
             }
-
         }
-
-        var canMoveToHome = situation.keySet()
-                .stream()
-                .filter(it -> it.moveHome)
-                .collect(Collectors.toList());
-
-        for (Amphipod amphipod : canMoveToHome) {
-            var currentPosition = situation.get(amphipod);
-            for (TargetToTarget targetToTarget : optionsFromStart.get(currentPosition)) {
-
-                if (targetToTarget.end.isHallway)
-                    continue;
-
-                if (!targetToTarget.isPassable(situation, amphipod))
-                    continue;
-
-                var newSituation = new HashMap<>(situation);
-                newSituation.remove(amphipod);
-                var newAmphipod = Amphipod.builder()
-                        .id(amphipod.id)
-                        .isHome(targetToTarget.end.restrictedTo != null)
-                        .movementCost(amphipod.movementCost)
-                        .moveToHall(false)
-                        .moveHome(false)
-                        .type(amphipod.type)
-                        .build();
-                newSituation.put(newAmphipod, targetToTarget.end);
-
-                var movePrice = amphipod.movementCost * targetToTarget.distance;
-                solve(globalMin, memory, newSituation, price + movePrice, optionsFromStart);
-
-            }
-
-        }
-
-        memory.add(situation);
-
     }
 
     private boolean isSolved(Map<Amphipod, Target> situation) {
@@ -220,6 +171,8 @@ public class Day23 extends Day {
                 optionsFromStart.get(start).add(
                         new TargetToTarget(start, end, path.getLength(), pathCoordsBetween));
             }
+            optionsFromStart.get(start).sort(Comparator.comparingInt(it -> it.distance));
+
         }
         return optionsFromStart;
     }
@@ -331,29 +284,62 @@ public class Day23 extends Day {
         return charArray;
     }
 
-    @Override
-    public Object part2(String data) {
+    private Object findMinimalPrice(String[] input) {
+        char[][] charArray = convertInputToChars(input);
 
-        String[] input = data.split("\n");
+        List<Target> targets = findTargets(charArray);
+        var optionsFromStart = findOptions(charArray, targets);
 
-        return 0L;
+        Map<Amphipod, Target> situation = initSituation(charArray, targets);
+
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Amphipod, Target> entry : situation.entrySet()) {
+            sb.append(entry.getKey());
+            sb.append("\n");
+            sb.append(entry.getValue());
+            sb.append("\n\n");
+        }
+        log.info("Start: \n{}", sb);
+
+        AtomicLong globalMin = new AtomicLong(Long.MAX_VALUE);
+        Map<Map<Amphipod, Target>, Long> memory = new HashMap<>();
+        solve(globalMin, new LinkedList<>(), memory, situation, 0L, optionsFromStart);
+
+        return globalMin.get();
+    }
+
+    private String[] insertTwoLines(String[] input2) {
+        List<String> input1 = new ArrayList<>();
+        for (int i = 0; i < input2.length; i++) {
+            input1.add(input2[i]);
+
+            if (i == 2) {
+                input1.add("  #D#C#B#A#");
+                input1.add("  #D#B#A#C#");
+            }
+
+        }
+        String[] input = new String[input2.length + 2];
+        for (int i = 0; i < input1.size(); i++) {
+            input[i] = input1.get(i);
+        }
+        return input;
     }
 
 
-    @EqualsAndHashCode
+    @EqualsAndHashCode(of = {"id", "moveToHall", "isHome"})
     @ToString
     @RequiredArgsConstructor
     @Builder
     private static class Amphipod {
-        final String id;
+        final int id;
         final boolean moveToHall;
-        final boolean moveHome;
         final int movementCost;
         final char type;
         final boolean isHome;
     }
 
-    @EqualsAndHashCode
+    @EqualsAndHashCode(of = "coords")
     @ToString
     @RequiredArgsConstructor
     private static class Target {
@@ -382,23 +368,25 @@ public class Day23 extends Day {
         final int distance;
         final List<Target> targetsMet;
 
-        //        boolean isPassable(Map<Target, Amphipod> amphipodMap, Amphipod amphipod) {
-//
-//            return !amphipodMap.containsKey(end)
-//                    && end.isAllowed(amphipod.type)
-//                    && targetsMet.stream().noneMatch(amphipodMap::containsKey);
-//        }
-//
-        boolean isPassable(Map<Amphipod, Target> amphipodTargetMap, Amphipod amphipod) {
+        boolean isImpassable(Map<Amphipod, Target> amphipodTargetMap, Amphipod amphipod) {
 
-            return !amphipodTargetMap.containsValue(end)
-                    && end.isAllowed(amphipod.type)
-                    && targetsMet.stream().noneMatch(amphipodTargetMap::containsValue);
+            return amphipodTargetMap.containsValue(end)
+                    || !end.isAllowed(amphipod.type)
+                    || targetsMet.stream().anyMatch(amphipodTargetMap::containsValue);
 
         }
 
     }
 
+    @RequiredArgsConstructor
+    @ToString
+    private static class ArchivedMove {
+        final int id;
+        final char c;
+        final Coords target;
+        final int moves;
+        final int cost;
+    }
 
     @Override
     public int getDayNumber() {
