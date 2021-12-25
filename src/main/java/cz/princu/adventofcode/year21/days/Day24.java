@@ -75,7 +75,11 @@ public class Day24 extends Day {
         var start = new ALU(instructions);
         start.init14();
 
-        findValidModelNumber(ranges, start, 0);
+        // hack for continue where previous computation started
+        start.inputVars[0] = 3;
+        start.run(18);
+
+        findValidModelNumber(ranges, start, 1);
 
 
 //        alu = new ALU(data.split("\n"));
@@ -107,14 +111,14 @@ public class Day24 extends Day {
 
         if (start.hasNoOtherInstructions()) {
             if (start.vars[3] == 0) {
-                log.info("Best solution: {}", start.inputVars);
+                log.info("Best solution: {}", Arrays.stream(start.inputVars).mapToObj(it -> String.valueOf(it)).collect(Collectors.joining()));
                 throw new RuntimeException("solution found");
             }
             // dead end
             return;
         }
 
-        for (int j = 9; j >= 1; j--) {
+        for (int j = 1; j <= 9; j++) {
             var aluCopy = ALU.copyOf(start);
             aluCopy.inputVars[i] = j;
             aluCopy.run(18);
@@ -202,7 +206,7 @@ public class Day24 extends Day {
         public void init14() {
             Arrays.fill(vars, 0);
             for (int i = 0; i < BITS; i++) {
-                inputVars[i] = 9;
+                inputVars[i] = 1;
             }
         }
 
