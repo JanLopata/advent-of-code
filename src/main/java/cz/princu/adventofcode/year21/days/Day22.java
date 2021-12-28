@@ -44,7 +44,8 @@ public class Day22 extends Day {
 
             for (Cuboid knownCuboid : knownCuboids) {
                 var newIntersection = knownCuboid.negativeIntersection(next);
-                intersectionCuboids.add(newIntersection);
+                if (newIntersection.isValid())
+                    intersectionCuboids.add(newIntersection);
             }
 
             knownCuboids.add(next);
