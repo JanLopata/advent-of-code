@@ -113,8 +113,9 @@ public class Day23 extends Day {
             return;
         }
 
-        for (Amphipod amphipod : situation.keySet()) {
-            var currentPosition = situation.get(amphipod);
+        for (Map.Entry<Amphipod, Target> entry : situation.entrySet()) {
+            Amphipod amphipod = entry.getKey();
+            var currentPosition = entry.getValue();
             if (amphipod.isHome)
                 continue;
 
@@ -123,6 +124,9 @@ public class Day23 extends Day {
 
                 var target = path.end;
                 if ((target.isHallway && !amphipod.moveToHall) || (path.isImpassable(situation, amphipod)))
+                    continue;
+
+                if (!target.isHallway && someoneNotHomeIsTrapped(situation, target))
                     continue;
 
                 var newSituation = new HashMap<>(situation);
@@ -142,6 +146,30 @@ public class Day23 extends Day {
                 moveStack.removeLast();
             }
         }
+    }
+
+    private boolean someoneNotHomeIsTrapped(Map<Amphipod, Target> situation, Target target) {
+
+        for (Map.Entry<Amphipod, Target> e : situation.entrySet()) {
+
+            if (target.isHallway)
+                continue;
+
+            if (target.coords.getI() != e.getValue().coords.getI())
+                continue;
+
+            // same column
+            if (target.coords.getJ() < e.getValue().coords.getJ()) {
+                // lower than target
+                if (!e.getKey().isHome) {
+//                    log.info("found {} trapped on {}", e.getKey(), e.getValue());
+                    // found trapped
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private boolean isSolved(Map<Amphipod, Target> situation) {
