@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Slf4j
 public class Day22 extends Day {
@@ -24,12 +25,23 @@ public class Day22 extends Day {
 
     @Override
     public Object part1(String data) {
+        return solve(data, 50);
+    }
 
+    @Override
+    public Object part2(String data) {
+        return solve(data, Long.MAX_VALUE);
+    }
+
+    private long solve(String data, long rangeLimit) {
         String[] input = data.split("\n");
-
         List<Cuboid> inputCuboids = new ArrayList<>();
         for (String s : input) {
-            inputCuboids.add(parseCuboid(s));
+            var cuboid = parseCuboid(s);
+            if (cuboid.getVertices()
+                    .stream().flatMap(it -> Stream.of(it.getX(), it.getY(), it.getZ()))
+                    .mapToLong(Math::abs).max().orElse(-1) <= rangeLimit)
+                inputCuboids.add(cuboid);
         }
 
         List<Cuboid> knownCuboids = new ArrayList<>();
@@ -53,13 +65,9 @@ public class Day22 extends Day {
 
         }
 
-//        log.info("{}", knownCuboids);
-        long result = 0L;
-        for (Cuboid knownCuboid : knownCuboids) {
-            result += knownCuboid.volume() * knownCuboid.getValue();
-        }
-
-        return result;
+        return knownCuboids.stream()
+                .mapToLong(it -> it.getValue() * it.volume())
+                .sum();
     }
 
     private Cuboid parseCuboid(String s) {
@@ -82,14 +90,6 @@ public class Day22 extends Day {
         }
 
         throw new IllegalArgumentException("not parsed");
-    }
-
-    @Override
-    public Object part2(String data) {
-
-        String[] input = data.split("\n");
-
-        return 0L;
     }
 
 
@@ -127,26 +127,6 @@ public class Day22 extends Day {
             return min.getX() <= max.getX() && min.getY() <= max.getY() && min.getZ() <= max.getZ();
         }
 
-        boolean contains(Coord3 vertex) {
-
-            if (vertex.getX() < min.getX())
-                return false;
-            if (vertex.getX() > max.getX())
-                return false;
-
-            if (vertex.getY() < min.getY())
-                return false;
-            if (vertex.getY() > max.getY())
-                return false;
-
-            if (vertex.getZ() < min.getZ())
-                return false;
-            if (vertex.getZ() > max.getZ())
-                return false;
-
-            return true;
-        }
-
         public Cuboid negativeIntersection(Cuboid another) {
 
             Coord3 intersectionMin = Coord3.of(
@@ -161,18 +141,6 @@ public class Day22 extends Day {
             );
 
             return new Cuboid(intersectionMin, intersectionMax, -this.value);
-        }
-
-        public List<Coord3> getAllVertices() {
-            List<Coord3> result = new ArrayList<>();
-            for (int x = min.getX(); x <= max.getX(); x++) {
-                for (int y = min.getY(); y <= max.getY(); y++) {
-                    for (int z = min.getZ(); z <= max.getZ(); z++) {
-                        result.add(Coord3.of(x, y, z));
-                    }
-                }
-            }
-            return result;
         }
 
     }
